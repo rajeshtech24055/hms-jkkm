@@ -126,7 +126,7 @@ export default function UsersPage() {
               </div>
               <div className="form-group">
                 <label>Email Address *</label>
-                <input className="input" type="email" value={form.email} onChange={e=>setForm({...form, email: e.target.value})} required />
+                <input className="input" type="email" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" title="Valid email address (e.g., name@example.com)" value={form.email} onChange={e=>setForm({...form, email: e.target.value})} required />
               </div>
             </div>
 

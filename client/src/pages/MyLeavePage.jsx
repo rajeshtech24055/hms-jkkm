@@ -323,7 +323,7 @@ export default function MyLeavePage() {
               </div>
               <div className="form-group">
                 <label className="form-label">Parent/Guardian Phone (for confirmation)</label>
-                <input type="tel" className="form-input" placeholder="e.g., 9876543210" value={newVacate.parent_phone} onChange={e => setNewVacate({...newVacate, parent_phone: e.target.value})} />
+                <input type="tel" className="form-input" placeholder="e.g., 9876543210" pattern="[0-9]{10}" title="10 digit mobile number" required value={newVacate.parent_phone} onChange={e => setNewVacate({...newVacate, parent_phone: e.target.value})} />
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
                 <button type="submit" className="btn btn-danger" style={{ flex: 1 }}>🏠 Submit Vacate Request</button>

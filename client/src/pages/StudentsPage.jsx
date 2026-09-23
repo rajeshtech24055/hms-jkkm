@@ -587,7 +587,7 @@ export default function StudentsPage() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Email *</label>
-                  <input className="form-input" required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                  <input className="form-input" required type="email" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" title="Valid email address (e.g., name@example.com)" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Guardian Name *</label>

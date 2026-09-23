@@ -132,7 +132,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin}>
               <div className="form-group" style={{ marginBottom: 20 }}>
                 <label className="form-label" style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 600 }}>Email Address</label>
-                <input type="email" className="form-input" placeholder="email@jkkm.edu"
+                <input type="email" className="form-input" placeholder="email@jkkm.edu" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" title="Valid email address (e.g., name@example.com)"
                   value={email} onChange={e => setEmail(e.target.value)} required 
                   style={{ padding: '14px 16px', fontSize: 15, background: 'var(--bg)', border: '1px solid var(--border-light)' }} />
               </div>
@@ -168,7 +168,7 @@ export default function LoginPage() {
             <form onSubmit={handleRequestOtp}>
               <div className="form-group" style={{ marginBottom: 24 }}>
                 <label className="form-label">Registered Email Address</label>
-                <input type="email" className="form-input" placeholder="email@jkkm.edu"
+                <input type="email" className="form-input" placeholder="email@jkkm.edu" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" title="Valid email address (e.g., name@example.com)"
                   value={fpEmail} onChange={e => setFpEmail(e.target.value)} required 
                   style={{ padding: '14px 16px', fontSize: 15 }} />
               </div>
