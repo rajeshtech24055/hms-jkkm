@@ -146,6 +146,62 @@ def get_students(
         output.append(s_dict)
     return output
 
+@router.get("/{student_id}")
+def get_student(
+    student_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    r = db.query(
+        Student,
+        Institution.name.label("institution_name"),
+        Institution.code.label("institution_code"),
+        Department.name.label("dept_name"),
+        Room.room_no,
+        Room.block
+    ).outerjoin(Institution, Student.institution_id == Institution.id)\
+     .outerjoin(Department, Student.dept_id == Department.id)\
+     .outerjoin(Room, Student.room_id == Room.id)\
+     .filter(Student.id == student_id).first()
+
+    if not r:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    student, inst_name, inst_code, dept_name, room_no, block = r
+    last_log = db.query(EntryExitLog).filter(
+        EntryExitLog.student_id == student.id,
+        EntryExitLog.flagged == 0
+    ).order_by(EntryExitLog.id.desc()).first()
+
+    return {
+        "id": student.id,
+        "reg_no": student.reg_no,
+        "name": student.name,
+        "gender": student.gender,
+        "institution_id": student.institution_id,
+        "institution_name": inst_name,
+        "institution_code": inst_code,
+        "dept_id": student.dept_id,
+        "dept_name": dept_name,
+        "year": student.year,
+        "batch": student.batch,
+        "room_id": student.room_id,
+        "room_no": room_no,
+        "block": block,
+        "bed_no": student.bed_no,
+        "guardian_name": student.guardian_name,
+        "guardian_phone": student.guardian_phone,
+        "guardian_email": student.guardian_email,
+        "blood_group": student.blood_group,
+        "mobile": student.mobile,
+        "email": student.email,
+        "dob": student.dob,
+        "qr_token": student.qr_token,
+        "photo_url": student.photo_url,
+        "current_status": last_log.direction if last_log else "IN",
+        "active": student.active
+    }
+
 @router.post("")
 def create_student(
     data: StudentCreate,
