@@ -41,28 +41,44 @@ export default function MyCardPage() {
 
   const fetchStudentDetails = async () => {
     try {
-      // Fetch all students to find current user
-      const data = await api('/api/students');
-      const student = data.find(s => s.email === user.email);
-      
-      if (student) {
+      // Use the student's own ID directly from the auth token — much faster and reliable
+      let student = null;
+
+      try {
+        // Primary: fetch student directly by their ID (set in JWT on login)
+        student = await api(`/api/students/${user.id}`);
+      } catch (_) {
+        // Fallback: scan all students and match by email or reg_no
+        try {
+          const all = await api('/api/students');
+          student = all.find(s =>
+            s.email === user.email ||
+            s.reg_no === user.reg_no
+          );
+        } catch (e2) {
+          console.error('Fallback student fetch failed', e2);
+        }
+      }
+
+      if (student && student.id) {
         // Fetch logs to determine IN/OUT status
-        const logs = await api('/api/gate/log');
-        const myLogs = logs.filter(l => l.student_id === student.id);
-        const lastLog = myLogs.length > 0 ? myLogs[0] : null; // logs are ordered DESC
-        const status = (!lastLog || lastLog.direction === 'IN') ? 'INSIDE' : 'OUTSIDE';
-        
-        student.current_status = status;
+        try {
+          const logs = await api('/api/gate/log');
+          const myLogs = logs.filter(l => l.student_id === student.id);
+          const lastLog = myLogs.length > 0 ? myLogs[0] : null;
+          student.current_status = (!lastLog || lastLog.direction === 'IN') ? 'INSIDE' : 'OUTSIDE';
+        } catch (_) {
+          student.current_status = 'INSIDE'; // default
+        }
+
         setStudentDetails(student);
 
-        // Fetch actual QR code
+        // Fetch QR code
         try {
           const qrData = await api(`/api/students/${student.id}/qr`);
-          if (qrData && qrData.qr) {
-            setQrCode(qrData.qr);
-          }
+          if (qrData?.qr) setQrCode(qrData.qr);
         } catch (e) {
-          console.error("Failed to load QR code", e);
+          console.error('Failed to load QR code', e);
         }
       }
     } catch (err) {
