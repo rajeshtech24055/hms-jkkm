@@ -32,12 +32,33 @@ class StudentCreate(BaseModel):
     blood_group: str
     mobile: str
     email: str
+    dob: Optional[str] = None
+
+class StudentUpdate(BaseModel):
+    reg_no: Optional[str] = None
+    name: Optional[str] = None
+    gender: Optional[str] = None
+    institution_id: Optional[int] = None
+    dept_id: Optional[int] = None
+    year: Optional[str] = None
+    batch: Optional[str] = None
+    room_id: Optional[int] = None
+    bed_no: Optional[int] = None
+    guardian_name: Optional[str] = None
+    guardian_phone: Optional[str] = None
+    guardian_email: Optional[str] = None
+    blood_group: Optional[str] = None
+    mobile: Optional[str] = None
+    email: Optional[str] = None
     dob: Optional[str] = None  # Format: YYYY-MM-DD (HTML date input)
 
 class PromoteRequest(BaseModel):
     batch: Optional[str] = None
     from_year: Optional[str] = None
     to_year: str
+
+class RoomAssign(BaseModel):
+    room_id: Optional[int] = None
 
 @router.get("")
 def get_students(
@@ -187,7 +208,7 @@ def create_student(
 @router.put("/{student_id}")
 def update_student(
     student_id: int,
-    data: StudentCreate,
+    data: StudentUpdate,
     current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
     db: Session = Depends(get_db)
 ):
@@ -202,22 +223,22 @@ def update_student(
             if occupied >= room.capacity:
                 raise HTTPException(status_code=400, detail=f"Room {room.room_no} is already full ({occupied}/{room.capacity})")
 
-    student.reg_no = data.reg_no.upper()
-    student.name = data.name
-    student.gender = data.gender
-    student.institution_id = data.institution_id
-    student.dept_id = data.dept_id
-    student.year = data.year
-    if data.batch: student.batch = data.batch
-    student.room_id = data.room_id
-    student.bed_no = data.bed_no or 1
-    student.guardian_name = data.guardian_name
-    student.guardian_phone = data.guardian_phone
-    student.guardian_email = data.guardian_email
-    student.blood_group = data.blood_group
-    student.mobile = data.mobile
-    student.email = data.email
-    if data.dob: student.dob = data.dob
+    if data.reg_no is not None: student.reg_no = data.reg_no.upper()
+    if data.name is not None: student.name = data.name
+    if data.gender is not None: student.gender = data.gender
+    if data.institution_id is not None: student.institution_id = data.institution_id
+    if data.dept_id is not None: student.dept_id = data.dept_id
+    if data.year is not None: student.year = data.year
+    if data.batch is not None: student.batch = data.batch
+    if data.room_id is not None: student.room_id = data.room_id
+    if data.bed_no is not None: student.bed_no = data.bed_no
+    if data.guardian_name is not None: student.guardian_name = data.guardian_name
+    if data.guardian_phone is not None: student.guardian_phone = data.guardian_phone
+    if data.guardian_email is not None: student.guardian_email = data.guardian_email
+    if data.blood_group is not None: student.blood_group = data.blood_group
+    if data.mobile is not None: student.mobile = data.mobile
+    if data.email is not None: student.email = data.email
+    if data.dob is not None: student.dob = data.dob
 
     # Sync User Account if it exists
     user_acc = db.query(User).filter(User.email == student.email, User.role == "STUDENT").first()
@@ -250,6 +271,57 @@ def delete_student(
     db.delete(student)
     db.commit()
     return {"success": True, "message": "Student deleted successfully"}
+
+@router.put("/{student_id}/room")
+def assign_room(
+    student_id: int,
+    data: RoomAssign,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    if data.room_id:
+        room = db.query(Room).filter(Room.id == data.room_id).first()
+        if room:
+            occupied = db.query(Student).filter(Student.room_id == data.room_id, Student.active == 1).count()
+            if occupied >= room.capacity:
+                raise HTTPException(status_code=400, detail=f"Room {room.room_no} is already full ({occupied}/{room.capacity})")
+                
+    student.room_id = data.room_id
+    db.commit()
+    return {"success": True, "message": "Room updated"}
+
+@router.post("/{student_id}/vacate")
+def vacate_student(
+    student_id: int,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    student.active = 0
+    student.room_id = None
+    db.commit()
+    return {"success": True, "message": "Student vacated"}
+
+@router.post("/{student_id}/reactivate")
+def reactivate_student(
+    student_id: int,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    student.active = 1
+    db.commit()
+    return {"success": True, "message": "Student reactivated"}
 
 @router.post("/promote")
 def promote_students(

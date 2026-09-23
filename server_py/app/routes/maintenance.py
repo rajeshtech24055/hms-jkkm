@@ -47,24 +47,48 @@ def create_maintenance_request(
     db.commit()
     return {"id": req.id, "message": "Maintenance request submitted"}
 
-@router.put("/api/maintenance/{req_id}")
+class MaintenanceUpdate(BaseModel):
+    status: Optional[str] = None
+    remarks: Optional[str] = None
+    assigned_to: Optional[int] = None
+
+@router.patch("/api/maintenance/{req_id}")
 def update_maintenance_request(
     req_id: int,
-    status: Optional[str] = None,
-    remarks: Optional[str] = None,
-    assigned_to: Optional[int] = None,
+    data: MaintenanceUpdate,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     req = db.query(MaintenanceRequest).filter(MaintenanceRequest.id == req_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")
-    if status: req.status = status
-    if remarks: req.remarks = remarks
-    if assigned_to: req.assigned_to = assigned_to
-    if status == "completed": req.resolved_at = datetime.utcnow().isoformat()
+    if data.status: req.status = data.status
+    if data.remarks: req.remarks = data.remarks
+    if data.assigned_to: req.assigned_to = data.assigned_to
+    if data.status == "completed": req.resolved_at = datetime.utcnow().isoformat()
     db.commit()
     return {"success": True}
+
+class ScanVerify(BaseModel):
+    code: str
+
+@router.post("/api/maintenance/{req_id}/verify-scan")
+def verify_maintenance_scan(
+    req_id: int,
+    data: ScanVerify,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    req = db.query(MaintenanceRequest).filter(MaintenanceRequest.id == req_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+        
+    # Example logic: Verify scan code here
+    req.status = "completed"
+    req.resolved_at = datetime.utcnow().isoformat()
+    req.remarks = f"Verified by scan {data.code}"
+    db.commit()
+    return {"success": True, "message": "Verification successful and resolved"}
 
 # ─── COMPLAINTS ──────────────────────────────────────────────────────────────
 class ComplaintCreate(BaseModel):
@@ -113,3 +137,39 @@ def create_complaint(
     db.add(c)
     db.commit()
     return {"id": c.id, "message": "Complaint submitted successfully"}
+
+class ComplaintUpdate(BaseModel):
+    status: Optional[str] = None
+    admin_remarks: Optional[str] = None
+    priority: Optional[str] = None
+
+@router.put("/api/complaints/{complaint_id}")
+def update_complaint(
+    complaint_id: int,
+    data: ComplaintUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    c = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    if data.status: c.status = data.status
+    if data.admin_remarks: c.admin_remarks = data.admin_remarks
+    if data.priority: c.priority = data.priority
+    if data.status == "resolved": c.resolved_at = datetime.utcnow().isoformat()
+    db.commit()
+    return {"success": True, "message": "Complaint updated"}
+
+@router.delete("/api/complaints/{complaint_id}")
+def delete_complaint(
+    complaint_id: int,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN", "WARDEN")),
+    db: Session = Depends(get_db)
+):
+    c = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    db.delete(c)
+    db.commit()
+    return {"success": True, "message": "Complaint deleted"}

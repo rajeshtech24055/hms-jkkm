@@ -20,6 +20,17 @@ class UserCreate(BaseModel):
     gender: Optional[str] = None
     phone: Optional[str] = None
 
+class UserUpdate(BaseModel):
+    name: str
+    email: str
+    password: Optional[str] = None
+    role: str
+    institution_id: Optional[int] = None
+    dept_id: Optional[int] = None
+    year: Optional[str] = None
+    gender: Optional[str] = None
+    phone: Optional[str] = None
+
 @router.get("")
 def get_users(
     role: Optional[str] = None,
@@ -96,7 +107,7 @@ def create_user(
 @router.put("/{user_id}")
 def update_user(
     user_id: int,
-    data: UserCreate,
+    data: UserUpdate,
     current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
     db: Session = Depends(get_db)
 ):

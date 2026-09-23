@@ -9,7 +9,8 @@ from app.seed import seed_database
 from app.routes import (
     auth, users, students, rooms, departments, gate, leaves, mess,
     mess_analytics, inventory, maintenance, vacate, sos, notices,
-    ai_forecast, dashboard, analytics, audit
+    ai_forecast, dashboard, analytics, audit, menu, mess_feedback,
+    search, notifications
 )
 
 # 1. Import Socket.IO Server
@@ -70,6 +71,10 @@ app.include_router(ai_forecast.router)
 app.include_router(dashboard.router)
 app.include_router(analytics.router)
 app.include_router(audit.router)
+app.include_router(menu.router)
+app.include_router(mess_feedback.router)
+app.include_router(search.router)
+app.include_router(notifications.router)
 
 # 7. Wrap FastAPI app with Socket.IO ASGI app
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app)

@@ -119,21 +119,55 @@ def delete_mess_item(
     db.commit()
     return {"success": True, "message": "Mess item deleted"}
 
-@router.post("/usage")
-def log_mess_usage(
-    data: UsageLogCreate,
+class MessRestock(BaseModel):
+    qty: float
+    unit_price: Optional[float] = None
+    batch_no: Optional[str] = None
+    mfg_date: Optional[str] = None
+    exp_date: Optional[str] = None
+    bill_image: Optional[str] = None
+
+class MessUse(BaseModel):
+    qty: float
+
+@router.post("/{item_id}/restock")
+def restock_mess_item(
+    item_id: int,
+    data: MessRestock,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "FOOD_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    item = db.query(MessItem).filter(MessItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
+    item.current_stock += data.qty
+    if data.unit_price is not None:
+        item.unit_price = data.unit_price
+        
+    db.commit()
+    return {"success": True, "message": "Restocked successfully", "new_stock": item.current_stock}
+
+@router.post("/{item_id}/use")
+def use_mess_item(
+    item_id: int,
+    data: MessUse,
     current_user: dict = Depends(require_roles("SUPER_ADMIN", "FOOD_ADMIN", "MESS_WORKER")),
     db: Session = Depends(get_db)
 ):
-    item = db.query(MessItem).filter(MessItem.id == data.item_id).first()
+    item = db.query(MessItem).filter(MessItem.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
 
-    item.current_stock = max(0.0, item.current_stock - data.qty_used)
+    if item.current_stock < data.qty:
+        raise HTTPException(status_code=400, detail="Insufficient stock")
+        
+    item.current_stock -= data.qty
+    
     log = MessUsageLog(
-        item_id=data.item_id,
-        qty_used=data.qty_used,
-        date=data.date or datetime.utcnow().strftime("%Y-%m-%d"),
+        item_id=item_id,
+        qty_used=data.qty,
+        date=datetime.utcnow().strftime("%Y-%m-%d"),
         logged_by=current_user["id"]
     )
     db.add(log)

@@ -12,6 +12,10 @@ class DeptCreate(BaseModel):
     name: str
     institution_id: int
 
+class DeptUpdate(BaseModel):
+    name: str
+    institution_id: Optional[int] = None
+
 @router.get("/api/institutions")
 def get_institutions(db: Session = Depends(get_db)):
     return db.query(Institution).all()
@@ -58,7 +62,7 @@ def create_department(
 @router.put("/api/departments/{dept_id}")
 def update_department(
     dept_id: int,
-    data: DeptCreate,
+    data: DeptUpdate,
     current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
     db: Session = Depends(get_db)
 ):
@@ -66,7 +70,8 @@ def update_department(
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
     dept.name = data.name
-    dept.institution_id = data.institution_id
+    if data.institution_id is not None:
+        dept.institution_id = data.institution_id
     db.commit()
     return {"success": True, "message": "Department updated"}
 
@@ -79,6 +84,13 @@ def delete_department(
     dept = db.query(Department).filter(Department.id == dept_id).first()
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
+        
+    from app.models.models import Student, User
+    students_count = db.query(Student).filter(Student.dept_id == dept_id).count()
+    users_count = db.query(User).filter(User.dept_id == dept_id).count()
+    if students_count > 0 or users_count > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete. {students_count} students and {users_count} users are assigned to this department.")
+
     db.delete(dept)
     db.commit()
     return {"success": True, "message": "Department deleted"}

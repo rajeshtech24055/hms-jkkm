@@ -212,6 +212,39 @@ class AssetInventoryItem(Base):
     notes = Column(Text, nullable=True)
     updated_at = Column(String, nullable=True)
 
+class AssetTransaction(Base):
+    __tablename__ = "materials_transactions"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    item_id = Column(Integer, nullable=False)
+    type = Column(String, nullable=False)  # "IN" or "OUT" or "ADJUST"
+    qty = Column(Integer, nullable=False)
+    reason = Column(String, nullable=True)
+    logged_by = Column(String, nullable=True)
+    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+
+class AssetAssignment(Base):
+    __tablename__ = "materials_assignments"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    item_id = Column(Integer, nullable=False)
+    assigned_to_type = Column(String, nullable=False) # "ROOM", "STAFF", "STUDENT", "DEPT"
+    assigned_to_id = Column(String, nullable=False)
+    qty = Column(Integer, nullable=False)
+    assigned_by = Column(String, nullable=True)
+    assigned_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+    returned_at = Column(String, nullable=True)
+    status = Column(String, default="Active") # "Active", "Returned"
+
+class PurchaseOrder(Base):
+    __tablename__ = "purchase_orders"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    po_number = Column(String, nullable=False, unique=True)
+    vendor_name = Column(String, nullable=False)
+    items_json = Column(Text, nullable=False) # JSON array of items
+    total_amount = Column(Float, nullable=False)
+    status = Column(String, default="Pending") # "Pending", "Approved", "Received", "Cancelled"
+    created_by = Column(String, nullable=True)
+    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+    expected_date = Column(String, nullable=True)
 class MaintenanceRequest(Base):
     __tablename__ = "maintenance_requests"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -311,3 +344,54 @@ class DailySnapshot(Base):
     open_complaints = Column(Integer, default=0)
     open_tickets = Column(Integer, default=0)
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+
+class AssetTransaction(Base):
+    __tablename__ = "materials_tools_transactions"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    item_id = Column(Integer, nullable=False)
+    item_name = Column(String, nullable=False)
+    category = Column(String, nullable=True)
+    type = Column(String, nullable=False) # 'Purchase', 'Issue', 'Return', 'Damage', 'Disposal', 'Adjustment'
+    qty_change = Column(Float, nullable=False)
+    unit = Column(String, default="nos")
+    reason = Column(String, nullable=True)
+    reference_no = Column(String, nullable=True)
+    done_by = Column(String, nullable=True)
+    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+
+class AssetAssignment(Base):
+    __tablename__ = "materials_tools_assignments"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    item_id = Column(Integer, nullable=False)
+    item_name = Column(String, nullable=False)
+    category = Column(String, nullable=True)
+    room_label = Column(String, nullable=True)
+    student_name = Column(String, nullable=True)
+    assigned_qty = Column(Float, default=1)
+    unit = Column(String, default="nos")
+    assigned_date = Column(String, nullable=True)
+    expected_return = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+    status = Column(String, default="Active") # 'Active', 'Returned'
+    condition_on_return = Column(String, nullable=True)
+    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+    updated_at = Column(String, nullable=True)
+
+class PurchaseOrder(Base):
+    __tablename__ = "purchase_orders"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    po_number = Column(String, nullable=False, unique=True)
+    item_name = Column(String, nullable=False)
+    category = Column(String, nullable=True)
+    requested_qty = Column(Float, nullable=False)
+    received_qty = Column(Float, default=0)
+    unit_price = Column(Float, default=0.0)
+    total_amount = Column(Float, default=0.0)
+    vendor = Column(String, nullable=True)
+    status = Column(String, default="Pending") # 'Pending', 'Approved', 'Ordered', 'Received', 'Cancelled'
+    notes = Column(Text, nullable=True)
+    requested_by = Column(String, nullable=True)
+    approved_by = Column(String, nullable=True)
+    bill_image = Column(Text, nullable=True) # Base64 image
+    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+    updated_at = Column(String, nullable=True)
