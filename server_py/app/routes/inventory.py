@@ -83,6 +83,51 @@ def create_asset(
     db.refresh(item)
     return {"id": item.id, "message": "Asset item created"}
 
+@router.put("/{item_id}")
+def update_asset(
+    item_id: int,
+    data: AssetCreate,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "INVENTORY_ADMIN", "HOSTEL_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    item = db.query(AssetInventoryItem).filter(AssetInventoryItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    item.name = data.name
+    item.category = data.category
+    item.qty = data.qty
+    item.min_qty = data.min_qty or 5
+    item.unit = data.unit or "nos"
+    item.unit_price = data.unit_price or 0.0
+    item.total_price = (data.qty or 0) * (data.unit_price or 0.0)
+    item.vendor = data.vendor
+    item.purchase_date = data.purchase_date
+    item.location = data.location
+    item.condition_status = data.condition_status or "Good"
+    item.asset_code = data.asset_code
+    item.serial_no = data.serial_no
+    item.warranty_expiry = data.warranty_expiry
+    item.notes = data.notes
+    item.updated_at = datetime.utcnow().isoformat()
+    
+    db.commit()
+    return {"success": True, "message": "Asset updated"}
+
+@router.delete("/{item_id}")
+def delete_asset(
+    item_id: int,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "INVENTORY_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    item = db.query(AssetInventoryItem).filter(AssetInventoryItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    db.delete(item)
+    db.commit()
+    return {"success": True, "message": "Asset deleted"}
+
 @router.get("/transactions")
 def get_asset_transactions(db: Session = Depends(get_db)):
     return []

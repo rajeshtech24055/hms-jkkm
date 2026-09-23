@@ -80,6 +80,45 @@ def create_mess_item(
     db.refresh(item)
     return {"id": item.id, "message": "Mess item created"}
 
+@router.put("/{item_id}")
+def update_mess_item(
+    item_id: int,
+    data: MessItemCreate,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "FOOD_ADMIN", "INVENTORY_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    item = db.query(MessItem).filter(MessItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Mess item not found")
+    
+    item.name = data.name
+    item.category = data.category
+    item.unit = data.unit
+    item.current_stock = data.current_stock
+    item.reorder_level = data.reorder_level
+    item.reorder_qty = data.reorder_qty
+    item.lead_time_days = data.lead_time_days or 3
+    item.supplier = data.supplier
+    item.unit_price = data.unit_price or 0.0
+    item.updated_at = datetime.utcnow().isoformat()
+    
+    db.commit()
+    return {"success": True, "message": "Mess item updated"}
+
+@router.delete("/{item_id}")
+def delete_mess_item(
+    item_id: int,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "FOOD_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    item = db.query(MessItem).filter(MessItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Mess item not found")
+    
+    db.delete(item)
+    db.commit()
+    return {"success": True, "message": "Mess item deleted"}
+
 @router.post("/usage")
 def log_mess_usage(
     data: UsageLogCreate,
