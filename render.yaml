@@ -10,3 +10,13 @@ services:
         value: postgresql://neondb_owner:npg_OE9GvTqV7xhw@ep-polished-firefly-b5ks1lky-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require
       - key: JWT_SECRET
         generateValue: true
+
+  - type: web
+    name: hms-jkkm-client
+    env: static
+    buildCommand: "cd client && npm install && npm run build"
+    staticPublishPath: "./client/dist"
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
