@@ -25,7 +25,8 @@ export default function UsersPage() {
     setLoading(true);
     try {
       const data = await api('/api/users');
-      setUsers(data);
+      // Students are managed on the Students page — exclude them from Staff & Users
+      setUsers(data.filter(u => u.role !== 'STUDENT'));
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, require_roles
 from app.models.models import MaintenanceRequest, Complaint, User, Student
 
 router = APIRouter(tags=["Maintenance & Complaints"])

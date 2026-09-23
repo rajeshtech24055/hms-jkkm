@@ -46,6 +46,9 @@ def get_users(
 
     if role:
         query = query.filter(User.role == role)
+    else:
+        # Exclude STUDENT role — students are managed separately in the Students page
+        query = query.filter(User.role != "STUDENT")
 
     users = query.all()
     output = []
