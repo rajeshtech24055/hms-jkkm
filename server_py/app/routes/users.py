@@ -92,3 +92,42 @@ def create_user(
     db.commit()
     db.refresh(user)
     return {"id": user.id, "message": "User created successfully"}
+
+@router.put("/{user_id}")
+def update_user(
+    user_id: int,
+    data: UserCreate,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    user.name = data.name
+    user.email = data.email
+    if data.password:
+        user.password_hash = get_password_hash(data.password)
+    user.role = data.role
+    user.institution_id = data.institution_id
+    user.dept_id = data.dept_id
+    user.year = data.year
+    user.gender = data.gender
+    user.phone = data.phone
+    
+    db.commit()
+    return {"success": True, "message": "User updated successfully"}
+
+@router.delete("/{user_id}")
+def delete_user(
+    user_id: int,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    db.delete(user)
+    db.commit()
+    return {"success": True, "message": "User deleted"}

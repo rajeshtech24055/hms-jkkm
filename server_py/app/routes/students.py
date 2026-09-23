@@ -232,6 +232,25 @@ def update_student(
     db.commit()
     return {"success": True, "message": "Student updated successfully"}
 
+@router.delete("/{student_id}")
+def delete_student(
+    student_id: int,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    # Delete associated User account if it exists
+    user_acc = db.query(User).filter(User.email == student.email, User.role == "STUDENT").first()
+    if user_acc:
+        db.delete(user_acc)
+        
+    db.delete(student)
+    db.commit()
+    return {"success": True, "message": "Student deleted successfully"}
+
 @router.post("/promote")
 def promote_students(
     req: PromoteRequest,
