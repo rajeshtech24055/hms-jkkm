@@ -248,6 +248,13 @@ function MainLayout() {
         {pinnedKeys.map(pageKey => {
           const meta = PAGE_META[pageKey];
           if (!meta) return null;
+          
+          // Determine short label for bottom nav
+          let shortLabel = meta.label;
+          if (pageKey === 'mycard') shortLabel = 'Card';
+          if (pageKey === 'myleave') shortLabel = 'Leave';
+          if (pageKey === 'dashboard') shortLabel = 'Home';
+          
           return (
             <div
               key={pageKey}
@@ -255,7 +262,7 @@ function MainLayout() {
               onClick={() => navigate(pageKey)}
             >
               <span className="nav-icon">{meta.icon}</span>
-              <span>{meta.label.split(' ')[0]}</span>
+              <span>{shortLabel}</span>
             </div>
           );
         })}
@@ -329,15 +336,18 @@ function MainLayout() {
       {/* SOS Button (Student only) */}
       {user?.role === 'STUDENT' && (
         <button
+          className="sos-floating-btn"
           onClick={async () => {
             if(window.confirm('⚠️ TRIGGER SOS EMERGENCY?\nThis will alert wardens immediately.')) {
               try { await api('/api/sos',{method:'POST'}); alert('🚨 SOS sent! Help is on the way.'); }
               catch(e) { alert(e.message); }
             }
           }}
-          style={{ position:'fixed',bottom:85,left:16,width:52,height:52,borderRadius:'50%',background:'var(--danger)',color:'white',border:'none',boxShadow:'0 8px 24px rgba(239,68,68,0.5)',fontSize:22,cursor:'pointer',zIndex:9990,display:'flex',alignItems:'center',justifyContent:'center' }}
           title="SOS Emergency"
-        >🛡️</button>
+        >
+          <span className="sos-icon">🚨</span>
+          <span className="sos-text">SOS</span>
+        </button>
       )}
 
       {/* Global Search (Ctrl+K) */}

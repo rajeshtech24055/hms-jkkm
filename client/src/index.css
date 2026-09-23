@@ -712,3 +712,96 @@ img { max-width: 100%; }
   .btn { font-size: 13px; padding: 10px 12px; }
   .rooms-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
 }
+/* ─── PREMIUM MOBILE UI OVERRIDES ─── */
+@media (max-width: 768px) {
+  /* Glassmorphism Header */
+  .topbar {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  }
+  
+  /* Glassmorphism Bottom Nav */
+  .mobile-bottom-nav {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+    box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.08) !important;
+    padding-bottom: env(safe-area-inset-bottom, 10px) !important;
+  }
+
+  /* Improved Nav Items */
+  .mobile-bottom-nav-item {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.3px;
+  }
+  .mobile-bottom-nav-item .nav-icon {
+    font-size: 24px !important;
+    margin-bottom: 2px;
+  }
+  
+  /* SOS Floating Button */
+  .sos-floating-btn {
+    position: fixed;
+    bottom: 90px;
+    right: 16px;
+    width: 60px;
+    height: 60px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 8px 30px rgba(239, 68, 68, 0.4);
+    cursor: pointer;
+    z-index: 9990;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .sos-floating-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+  }
+  .sos-icon {
+    font-size: 22px;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .sos-text {
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.5px;
+  }
+
+  /* Card and Layout Spacing */
+  .page-content {
+    padding: 16px 12px 100px !important;
+    background: #f4f6fa;
+  }
+  .card {
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+    border-radius: 16px !important;
+  }
+
+  /* Table improvements */
+  .table-responsive {
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  }
+  .table th {
+    font-size: 11px !important;
+    padding: 12px 8px !important;
+  }
+  .table td {
+    font-size: 13px !important;
+    padding: 12px 8px !important;
+  }
+}
