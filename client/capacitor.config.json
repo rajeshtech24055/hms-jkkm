@@ -1,0 +1,8 @@
+{
+  "appId": "com.hms.jkkm",
+  "appName": "HMS JKKM",
+  "webDir": "dist",
+  "server": {
+    "cleartext": true
+  }
+}

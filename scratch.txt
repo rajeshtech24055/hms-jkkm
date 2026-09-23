@@ -1,0 +1,15 @@
+                                  <button className="btn btn-icon btn-ghost" style={{ border: 'none', background: 'var(--bg-card2)', color: 'var(--warning)' }} onClick={() => { setSelectedItem(item.master_item); setUsageForm(f => ({ ...f, item_id: item.master_item.id })); setShowUsageModal(true); }} title="Log Usage">📉</button>
+                                  <button className="btn btn-icon btn-ghost" style={{ border: 'none', background: 'var(--bg-card2)' }} onClick={() => openEdit(item.master_item)} title="Edit Master Item">✏️</button>
+                                  <button className="btn btn-icon btn-ghost" style={{ border: 'none', background: 'var(--bg-card2)', color: 'var(--danger)' }} onClick={() => handleDelete(item.master_item.id, item.master_item.name)} title="Delete All">🗑️</button>
+                                </div>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                          <div style={{ fontSize:11, color:'var(--text-dim)', marginTop: 2 }}>Limit: {item.reorder_level} {item.unit}</div>
+                          {item.current_stock <= item.reorder_level && (
+                            <div style={{ fontSize:11, color:'var(--danger)', fontWeight: 700, marginTop: 2 }}>
+                              ⚠️ Low Stock (&le; {item.reorder_level})
+                            </div>
+                          )}
