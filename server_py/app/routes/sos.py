@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.models import SosIncident, Student
+from app.socket import sio
 
 router = APIRouter(prefix="/api/sos", tags=["SOS Emergency"])
 
@@ -26,6 +27,7 @@ def get_sos_incidents(
 @router.post("/trigger")
 def trigger_sos(
     data: SosCreate,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -39,6 +41,14 @@ def trigger_sos(
     db.add(incident)
     db.commit()
     db.refresh(incident)
+    
+    # Emit socket event
+    background_tasks.add_task(
+        sio.emit, 
+        "sos_alert", 
+        {"student_name": current_user["name"], "room_no": incident.room_no, "incident_id": incident.id}
+    )
+    
     return {
         "success": True,
         "incident_id": incident.id,

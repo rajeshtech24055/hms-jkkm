@@ -24,7 +24,7 @@ export default function MaintenancePage() {
     try {
       await api(`/api/maintenance/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ assigned_to: staffId || null })
+        body: JSON.stringify({ assigned_to: staffId ? parseInt(staffId) : null })
       });
       fetchRequests();
     } catch (err) {

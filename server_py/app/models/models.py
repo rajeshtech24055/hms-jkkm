@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, Boolean, Text, ForeignKey, DateTime, func
+from sqlalchemy import Column, Integer, String, Float, Boolean, Text, ForeignKey, DateTime, func, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -44,6 +44,7 @@ class User(Base):
 
 class Room(Base):
     __tablename__ = "rooms"
+    __table_args__ = (UniqueConstraint('room_no', 'institution_id', name='_room_inst_uc'),)
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     room_no = Column(String, nullable=False)
     block = Column(String, nullable=True)

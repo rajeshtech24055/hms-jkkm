@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -8,6 +8,7 @@ from app.database import get_db
 from app.security import decode_token
 from app.dependencies import get_current_user, require_roles
 from app.models.models import Student, EntryExitLog, LeaveApplication, NotificationLog, Institution, Department
+from app.socket import sio
 
 router = APIRouter(prefix="/api/gate", tags=["Gate Scanner"])
 
@@ -55,6 +56,7 @@ def get_gate_logs(
 @router.post("/scan")
 def scan_gate(
     req: ScanRequest,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(require_roles("SUPER_ADMIN", "GATE_STAFF")),
     db: Session = Depends(get_db)
 ):
@@ -108,6 +110,21 @@ def scan_gate(
             )
             db.add(log)
             db.commit()
+            
+            # Emit flagged realtime update
+            background_tasks.add_task(
+                sio.emit,
+                "gate_scan",
+                {
+                    "student_name": student.name,
+                    "reg_no": student.reg_no,
+                    "direction": "OUT",
+                    "authorized": 0,
+                    "dept_name": student.department.name if student.department else "",
+                    "flag_reason": "No approved leave"
+                }
+            )
+            
             return {
                 "success": False,
                 "reason": "No approved leave — Gate remains closed",
@@ -150,6 +167,19 @@ def scan_gate(
             used_leave.status = "completed"
 
     db.commit()
+
+    # Emit realtime update to dashboard
+    background_tasks.add_task(
+        sio.emit,
+        "gate_scan",
+        {
+            "student_name": student.name,
+            "reg_no": student.reg_no,
+            "direction": direction,
+            "authorized": 1,
+            "dept_name": student.department.name if student.department else ""
+        }
+    )
 
     return {
         "success": True,

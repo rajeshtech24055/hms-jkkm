@@ -134,6 +134,13 @@ def create_student(
                 default_password = parts[2] + parts[1] + parts[0]  # DDMMYYYY
         except:
             pass
+            
+    if data.room_id:
+        room = db.query(Room).filter(Room.id == data.room_id).first()
+        if room:
+            occupied = db.query(Student).filter(Student.room_id == data.room_id, Student.active == 1).count()
+            if occupied >= room.capacity:
+                raise HTTPException(status_code=400, detail=f"Room {room.room_no} is already full ({occupied}/{room.capacity})")
 
     student = Student(
         reg_no=data.reg_no.upper(),
@@ -188,6 +195,13 @@ def update_student(
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
+    if data.room_id and data.room_id != student.room_id:
+        room = db.query(Room).filter(Room.id == data.room_id).first()
+        if room:
+            occupied = db.query(Student).filter(Student.room_id == data.room_id, Student.active == 1).count()
+            if occupied >= room.capacity:
+                raise HTTPException(status_code=400, detail=f"Room {room.room_no} is already full ({occupied}/{room.capacity})")
+
     student.reg_no = data.reg_no.upper()
     student.name = data.name
     student.gender = data.gender
@@ -204,6 +218,16 @@ def update_student(
     student.mobile = data.mobile
     student.email = data.email
     if data.dob: student.dob = data.dob
+
+    # Sync User Account if it exists
+    user_acc = db.query(User).filter(User.email == student.email, User.role == "STUDENT").first()
+    if user_acc:
+        user_acc.name = student.name
+        user_acc.email = student.email
+        user_acc.gender = student.gender
+        user_acc.phone = student.mobile
+        user_acc.institution_id = student.institution_id
+        user_acc.dept_id = student.dept_id
 
     db.commit()
     return {"success": True, "message": "Student updated successfully"}
@@ -254,3 +278,35 @@ def get_student_qr(
     data_url = f"data:image/png;base64,{b64_str}"
 
     return {"qr": data_url, "expiresAt": int(time.time() * 1000) + 60000}
+
+@router.post("/{student_id}/photo")
+def upload_student_photo(
+    student_id: int, 
+    photo: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    upload_dir = os.path.join(os.path.dirname(__file__), "..", "..", "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Delete old photo if it exists
+    if student.photo_url:
+        old_file_name = student.photo_url.split("/")[-1]
+        old_file_path = os.path.join(upload_dir, old_file_name)
+        if os.path.exists(old_file_path):
+            os.remove(old_file_path)
+            
+    file_extension = photo.filename.split(".")[-1]
+    new_filename = f"student_{student_id}_{int(time.time())}.{file_extension}"
+    file_path = os.path.join(upload_dir, new_filename)
+    
+    with open(file_path, "wb") as f:
+        f.write(photo.file.read())
+        
+    student.photo_url = f"/uploads/{new_filename}"
+    db.commit()
+    return {"success": True, "photo_url": student.photo_url, "message": "Photo uploaded successfully"}

@@ -166,6 +166,7 @@ function HostelCard({ student, qrData }) {
 
 export default function StudentsPage() {
   const { api, user } = useAuth();
+  const canManage = ['SUPER_ADMIN', 'HOSTEL_ADMIN'].includes(user?.role);
   const [students, setStudents] = useState([]);
   const [institutions, setInstitutions] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -223,7 +224,17 @@ export default function StudentsPage() {
     try {
       const url = editId ? `/api/students/${editId}` : '/api/students';
       const method = editId ? 'PUT' : 'POST';
-      const result = await api(url, { method, body: JSON.stringify(form) });
+      const payload = {
+        ...form,
+        institution_id: parseInt(form.institution_id),
+        dept_id: parseInt(form.dept_id),
+        room_id: form.room_id ? parseInt(form.room_id) : null,
+        bed_no: parseInt(form.bed_no) || 1
+      };
+      if (isNaN(payload.institution_id) || isNaN(payload.dept_id)) {
+         return alert("Please select a valid institution and department.");
+      }
+      const result = await api(url, { method, body: JSON.stringify(payload) });
       const msg = result?.message || (editId ? 'Student updated successfully!' : 'Student added successfully!');
       alert(msg);
       setShowAdd(false);
@@ -270,7 +281,7 @@ export default function StudentsPage() {
     try {
       await api(`/api/students/${assigningStudent.id}/room`, {
         method: 'PUT',
-        body: JSON.stringify({ room_id: assignRoomId || null })
+        body: JSON.stringify({ room_id: assignRoomId ? parseInt(assignRoomId) : null })
       });
       setShowRoomModal(false);
       fetchStudents();
@@ -365,12 +376,12 @@ export default function StudentsPage() {
       <div className="section-header">
         <h2>👥 Students Management</h2>
         <div style={{ display:'flex', gap:8 }}>
-          {['SUPER_ADMIN', 'HOSTEL_ADMIN'].includes(user?.role) && (
+          {canManage && (
             <button className="btn btn-ghost" style={{ color: 'var(--primary)', borderColor: 'var(--primary)' }} onClick={() => setShowPromoteModal(true)}>🎓 Bulk Promote Year</button>
           )}
           <button className="btn btn-ghost" onClick={() => exportStudentsPDF(filteredStudents)} title="Export PDF">📄 PDF</button>
           <button className="btn btn-ghost" onClick={() => exportStudentsExcel(filteredStudents)} title="Export Excel">📊 Excel</button>
-          <button className="btn btn-primary" onClick={() => { setForm(defaultForm); setEditId(null); setShowAdd(true); }}>+ Add Student</button>
+          {canManage && <button className="btn btn-primary" onClick={() => { setForm(defaultForm); setEditId(null); setShowAdd(true); }}>+ Add Student</button>}
         </div>
       </div>
 
@@ -445,10 +456,10 @@ export default function StudentsPage() {
                         {s.room_no ? (
                           <div>
                             <div style={{ fontWeight:600, fontSize:13 }}>Room {s.room_no}</div>
-                            <button className="btn btn-sm" style={{ fontSize:10, padding:'2px 8px', marginTop:3, background:'var(--surface-2)' }} onClick={() => openAssignRoom(s)}>✏️ Change</button>
+                            {canManage && <button className="btn btn-sm" style={{ fontSize:10, padding:'2px 8px', marginTop:3, background:'var(--surface-2)' }} onClick={() => openAssignRoom(s)}>✏️ Change</button>}
                           </div>
                         ) : (
-                          <button className="btn btn-sm btn-primary" style={{ fontSize:11 }} onClick={() => openAssignRoom(s)}>🛏️ Assign Room</button>
+                          canManage && <button className="btn btn-sm btn-primary" style={{ fontSize:11 }} onClick={() => openAssignRoom(s)}>🛏️ Assign Room</button>
                         )}
                       </td>
                       <td>
@@ -458,14 +469,14 @@ export default function StudentsPage() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn btn-sm btn-ghost" onClick={() => openEdit(s)}>✏️ Edit</button>
+                          {canManage && <button className="btn btn-sm btn-ghost" onClick={() => openEdit(s)}>✏️ Edit</button>}
                           <button className="btn btn-sm btn-primary" onClick={() => openCard(s)}>🪪 Card</button>
                           {!isVacated ? (
-                            <button className="btn btn-sm btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => handleVacate(s)} title="Vacate Student">
+                            canManage && <button className="btn btn-sm btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => handleVacate(s)} title="Vacate Student">
                               🚪 Vacate
                             </button>
                           ) : (
-                            <button className="btn btn-sm btn-outline" style={{ color: 'var(--success)', borderColor: 'var(--success)' }} onClick={() => handleReadmit(s)} title="Re-admit Student">
+                            canManage && <button className="btn btn-sm btn-outline" style={{ color: 'var(--success)', borderColor: 'var(--success)' }} onClick={() => handleReadmit(s)} title="Re-admit Student">
                               🔄 Re-admit
                             </button>
                           )}

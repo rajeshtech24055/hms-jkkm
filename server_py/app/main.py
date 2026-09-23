@@ -12,8 +12,8 @@ from app.routes import (
     ai_forecast, dashboard, analytics
 )
 
-# 1. Create Socket.IO Server & Async Engine
-sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
+# 1. Import Socket.IO Server
+from app.socket import sio
 
 # 2. Initialize FastAPI Application
 app = FastAPI(
