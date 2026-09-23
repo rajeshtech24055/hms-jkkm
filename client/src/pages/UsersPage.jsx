@@ -54,9 +54,14 @@ export default function UsersPage() {
     try {
       const url = editId ? `/api/users/${editId}` : '/api/users';
       const method = editId ? 'PUT' : 'POST';
+      const payload = {
+        ...form,
+        institution_id: form.institution_id ? parseInt(form.institution_id) : null,
+        dept_id: form.dept_id ? parseInt(form.dept_id) : null
+      };
       const res = await api(url, {
         method,
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload)
       });
       alert(res.message);
       setShowForm(false);
