@@ -6,7 +6,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 import qrcode
 from app.database import get_db
 from app.config import settings
@@ -28,11 +28,19 @@ class StudentCreate(BaseModel):
     bed_no: Optional[int] = 1
     guardian_name: str
     guardian_phone: str = Field(pattern=r"^[0-9]{10}$")
-    guardian_email: str = Field(pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+    guardian_email: Optional[str] = None   # Optional — no input in form
     blood_group: str
     mobile: str = Field(pattern=r"^[0-9]{10}$")
     email: str = Field(pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     dob: Optional[str] = None
+
+    @field_validator('guardian_email', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        """Convert empty string to None so optional fields don't fail regex validation."""
+        if v == '' or v is None:
+            return None
+        return v
 
 class StudentUpdate(BaseModel):
     reg_no: Optional[str] = None
