@@ -72,16 +72,19 @@ export function AuthProvider({ children }) {
     const res = await fetch(fullPath, { ...options, headers });
     if (res.status === 401) {
       const data = await res.json().catch(() => ({}));
-      // Auto-logout on expired token
-      if (data.expired) {
+      // Auto-logout on expired/invalid token (FastAPI returns {"detail": "..."})
+      if (data.expired || (data.detail && data.detail.toLowerCase().includes('token')) || data.detail === 'Student user not found' || data.detail === 'User not found or inactive') {
         setSessionExpired(true);
         setUser(null); setToken(null);
         localStorage.removeItem('hms_user');
         localStorage.removeItem('hms_token');
       }
-      throw new Error(data.error || 'Unauthorized');
+      throw new Error(data.detail || data.error || 'Unauthorized');
     }
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'API Error');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || errData.error || 'API Error');
+    }
     return res.json();
   }, [token]);
 

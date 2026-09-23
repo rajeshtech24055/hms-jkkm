@@ -339,7 +339,7 @@ function MainLayout() {
           className="sos-floating-btn"
           onClick={async () => {
             if(window.confirm('⚠️ TRIGGER SOS EMERGENCY?\nThis will alert wardens immediately.')) {
-              try { await api('/api/sos',{method:'POST'}); alert('🚨 SOS sent! Help is on the way.'); }
+              try { await api('/api/sos/trigger',{method:'POST'}); alert('🚨 SOS sent! Help is on the way.'); }
               catch(e) { alert(e.message); }
             }
           }}
