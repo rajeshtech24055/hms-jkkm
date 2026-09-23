@@ -26,8 +26,8 @@ otp_store = {}
 
 @router.post("/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
-    # 1. Try finding in Users table
-    user = db.query(User).filter(User.email == req.email).first()
+    # 1. Try finding in Users table (non-students)
+    user = db.query(User).filter(User.email == req.email, User.role != "STUDENT").first()
     if user:
         if user.active != 1:
             raise HTTPException(status_code=400, detail="Account is deactivated")
