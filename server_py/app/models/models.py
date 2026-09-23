@@ -234,17 +234,6 @@ class AssetAssignment(Base):
     returned_at = Column(String, nullable=True)
     status = Column(String, default="Active") # "Active", "Returned"
 
-class PurchaseOrder(Base):
-    __tablename__ = "purchase_orders"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    po_number = Column(String, nullable=False, unique=True)
-    vendor_name = Column(String, nullable=False)
-    items_json = Column(Text, nullable=False) # JSON array of items
-    total_amount = Column(Float, nullable=False)
-    status = Column(String, default="Pending") # "Pending", "Approved", "Received", "Cancelled"
-    created_by = Column(String, nullable=True)
-    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
-    expected_date = Column(String, nullable=True)
 class MaintenanceRequest(Base):
     __tablename__ = "maintenance_requests"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
