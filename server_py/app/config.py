@@ -8,9 +8,11 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 8 # 8 hours
     
     # PostgreSQL URI with SQLite fallback for local development
-    DATABASE_URL: str = os.getenv(
+    # NOTE: Render provides DATABASE_URL as postgres:// but SQLAlchemy 2.x requires postgresql://
+    _raw_db_url: str = os.getenv(
         "DATABASE_URL",
         f"sqlite:///{os.path.join(os.path.dirname(__file__), '..', 'hms.db')}"
     )
+    DATABASE_URL: str = _raw_db_url.replace("postgres://", "postgresql://", 1) if _raw_db_url.startswith("postgres://") else _raw_db_url
 
 settings = Settings()
