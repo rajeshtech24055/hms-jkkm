@@ -2,6 +2,7 @@ services:
   - type: web
     name: hms-jkkm-api
     env: python
+    plan: free
     buildCommand: "cd server_py && pip install -r requirements.txt"
     startCommand: "cd server_py && uvicorn app.main:socket_app --host 0.0.0.0 --port $PORT"
     envVars:
