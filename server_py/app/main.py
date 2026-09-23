@@ -38,6 +38,23 @@ upload_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
 os.makedirs(upload_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
+# Apply database patches on startup
+from sqlalchemy import text
+@app.on_event("startup")
+def startup_event():
+    try:
+        with engine.begin() as conn:
+            try:
+                conn.execute(text("ALTER TABLE students ADD COLUMN dob VARCHAR;"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE students ADD COLUMN qr_token VARCHAR;"))
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"Failed to patch DB: {e}")
+
 # 5. Socket.IO Event Handlers
 @sio.event
 async def connect(sid, environ):
