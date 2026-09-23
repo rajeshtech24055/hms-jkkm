@@ -1,7 +1,7 @@
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.database import get_db
 from app.security import get_password_hash
 from app.dependencies import get_current_user, require_roles
@@ -11,25 +11,25 @@ router = APIRouter(prefix="/api/users", tags=["Users"])
 
 class UserCreate(BaseModel):
     name: str
-    email: str
+    email: str = Field(pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     password: str
     role: str
     institution_id: Optional[int] = None
     dept_id: Optional[int] = None
     year: Optional[str] = None
     gender: Optional[str] = None
-    phone: Optional[str] = None
+    phone: Optional[str] = Field(default=None, pattern=r"^[0-9]{10}$")
 
 class UserUpdate(BaseModel):
     name: str
-    email: str
+    email: str = Field(pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     password: Optional[str] = None
     role: str
     institution_id: Optional[int] = None
     dept_id: Optional[int] = None
     year: Optional[str] = None
     gender: Optional[str] = None
-    phone: Optional[str] = None
+    phone: Optional[str] = Field(default=None, pattern=r"^[0-9]{10}$")
 
 @router.get("")
 def get_users(

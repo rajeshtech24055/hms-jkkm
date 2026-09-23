@@ -6,7 +6,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import qrcode
 from app.database import get_db
 from app.config import settings
@@ -27,11 +27,11 @@ class StudentCreate(BaseModel):
     room_id: Optional[int] = None
     bed_no: Optional[int] = 1
     guardian_name: str
-    guardian_phone: str
-    guardian_email: str
+    guardian_phone: str = Field(pattern=r"^[0-9]{10}$")
+    guardian_email: str = Field(pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     blood_group: str
-    mobile: str
-    email: str
+    mobile: str = Field(pattern=r"^[0-9]{10}$")
+    email: str = Field(pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     dob: Optional[str] = None
 
 class StudentUpdate(BaseModel):
@@ -45,11 +45,11 @@ class StudentUpdate(BaseModel):
     room_id: Optional[int] = None
     bed_no: Optional[int] = None
     guardian_name: Optional[str] = None
-    guardian_phone: Optional[str] = None
-    guardian_email: Optional[str] = None
+    guardian_phone: Optional[str] = Field(default=None, pattern=r"^[0-9]{10}$")
+    guardian_email: Optional[str] = Field(default=None, pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     blood_group: Optional[str] = None
-    mobile: Optional[str] = None
-    email: Optional[str] = None
+    mobile: Optional[str] = Field(default=None, pattern=r"^[0-9]{10}$")
+    email: Optional[str] = Field(default=None, pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     dob: Optional[str] = None  # Format: YYYY-MM-DD (HTML date input)
 
 class PromoteRequest(BaseModel):
