@@ -169,7 +169,7 @@ function MainLayout() {
 
   React.useEffect(() => {
     if (!user) return;
-    const baseUrl = 'http://10.73.106.235:5000';
+    const baseUrl = 'https://hms-jkkm-api.onrender.com';
     const socketUrl = baseUrl || '/';
     const socket = io(socketUrl, { transports: ['polling', 'websocket'] });
     socket.emit('join', user.role);

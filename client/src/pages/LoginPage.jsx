@@ -28,7 +28,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
-      const res = await fetch('http://10.73.106.235:5000/api/auth/login', {
+      const res = await fetch('https://hms-jkkm-api.onrender.com/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -48,7 +48,7 @@ export default function LoginPage() {
     e.preventDefault();
     setFpError(''); setFpLoading(true);
     try {
-      const res = await fetch('http://10.73.106.235:5000/api/auth/forgot-password', {
+      const res = await fetch('https://hms-jkkm-api.onrender.com/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: fpEmail }),
@@ -72,7 +72,7 @@ export default function LoginPage() {
     if (newPwd.length < 6)    return setFpError('Password must be at least 6 characters');
     setFpLoading(true);
     try {
-      const res = await fetch('http://10.73.106.235:5000/api/auth/reset-password', {
+      const res = await fetch('https://hms-jkkm-api.onrender.com/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: fpEmail, otp, new_password: newPwd }),

@@ -67,7 +67,7 @@ export function AuthProvider({ children }) {
     if (options.body instanceof FormData) {
       delete headers['Content-Type'];
     }
-    const baseUrl = 'http://10.73.106.235:5000';
+    const baseUrl = 'https://hms-jkkm-api.onrender.com';
     const fullPath = path.startsWith('http') ? path : `${baseUrl}${path}`;
     const res = await fetch(fullPath, { ...options, headers });
     if (res.status === 401) {
