@@ -18,7 +18,7 @@ export default function RoomsPage() {
   const [form, setForm] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
 
-  const canManage = ['SUPER_ADMIN', 'HOSTEL_ADMIN', 'WARDEN'].includes(user?.role);
+  const canManage = ['SUPER_ADMIN', 'HOSTEL_ADMIN'].includes(user?.role);
 
   useEffect(() => {
     fetchRooms();
@@ -46,7 +46,18 @@ export default function RoomsPage() {
     try {
       const url = editId ? `/api/rooms/${editId}` : '/api/rooms';
       const method = editId ? 'PUT' : 'POST';
-      await api(url, { method, body: JSON.stringify(form) });
+      const payload = {
+        ...form,
+        floor: parseInt(form.floor) || 1,
+        capacity: parseInt(form.capacity) || 4,
+        institution_id: parseInt(form.institution_id)
+      };
+      if (isNaN(payload.institution_id)) {
+        alert("Please select a valid institution.");
+        setSaving(false);
+        return;
+      }
+      await api(url, { method, body: JSON.stringify(payload) });
       setShowAddModal(false);
       setEditId(null);
       setForm(defaultForm);
