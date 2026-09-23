@@ -101,6 +101,33 @@ def log_mess_usage(
     db.commit()
     return {"success": True, "new_stock": item.current_stock}
 
+@router.get("/usage")
+def get_mess_usage(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return db.query(MessUsageLog).order_by(MessUsageLog.id.desc()).limit(100).all()
+
+@router.get("/prediction")
+def get_mess_prediction(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Stubbed prediction data
+    return [
+        {"item": "Rice", "predicted_usage": 150, "unit": "kg", "confidence": 92},
+        {"item": "Dal", "predicted_usage": 45, "unit": "kg", "confidence": 88}
+    ]
+
+@router.get("/expiry-alerts")
+def get_expiry_alerts(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Just returning all items that have an exp_date for now as a stub
+    items = db.query(MessItem).filter(MessItem.exp_date != None).all()
+    return [{"id": i.id, "name": i.name, "exp_date": i.exp_date} for i in items]
+
 @router.get("/meals-served")
 def get_meals_served(db: Session = Depends(get_db)):
     return db.query(MessMealsServed).order_by(MessMealsServed.id.desc()).limit(30).all()

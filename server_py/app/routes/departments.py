@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.database import get_db
@@ -54,3 +54,31 @@ def create_department(
     db.commit()
     db.refresh(dept)
     return {"id": dept.id, "message": "Department created"}
+
+@router.put("/api/departments/{dept_id}")
+def update_department(
+    dept_id: int,
+    data: DeptCreate,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    dept = db.query(Department).filter(Department.id == dept_id).first()
+    if not dept:
+        raise HTTPException(status_code=404, detail="Department not found")
+    dept.name = data.name
+    dept.institution_id = data.institution_id
+    db.commit()
+    return {"success": True, "message": "Department updated"}
+
+@router.delete("/api/departments/{dept_id}")
+def delete_department(
+    dept_id: int,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db)
+):
+    dept = db.query(Department).filter(Department.id == dept_id).first()
+    if not dept:
+        raise HTTPException(status_code=404, detail="Department not found")
+    db.delete(dept)
+    db.commit()
+    return {"success": True, "message": "Department deleted"}

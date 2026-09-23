@@ -31,7 +31,7 @@ def get_rooms(
         func.count(Student.id).label("occupied")
     ).outerjoin(Institution, Room.institution_id == Institution.id)\
      .outerjoin(Student, (Student.room_id == Room.id) & (Student.active == 1))\
-     .group_by(Room.id)
+     .group_by(Room.id, Institution.name, Institution.code)
 
     if institution_id:
         query = query.filter(Room.institution_id == institution_id)

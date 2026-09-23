@@ -84,6 +84,15 @@ def get_complaints(
         query = query.filter(Complaint.student_id == current_user["id"])
     return query.order_by(Complaint.id.desc()).all()
 
+@router.get("/api/complaints/stats")
+def get_complaints_stats(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    open_count = db.query(Complaint).filter(Complaint.status == "open").count()
+    resolved_count = db.query(Complaint).filter(Complaint.status == "resolved").count()
+    return {"open": open_count, "resolved": resolved_count}
+
 @router.post("/api/complaints")
 def create_complaint(
     data: ComplaintCreate,
