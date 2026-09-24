@@ -51,9 +51,13 @@ export default function RoomsPage() {
   };
 
   // ─── Derived ───────────────────────────────────────────────────────────────
-  const hostelRooms = useMemo(() =>
-    selectedHostel ? rooms.filter(r => r.hostel_id === selectedHostel.id) : [],
-    [rooms, selectedHostel]);
+  const unassignedRooms = useMemo(() => rooms.filter(r => !r.hostel_id), [rooms]);
+
+  const hostelRooms = useMemo(() => {
+    if (!selectedHostel) return [];
+    if (selectedHostel.id === 'unassigned') return unassignedRooms;
+    return rooms.filter(r => r.hostel_id === selectedHostel.id);
+  }, [rooms, selectedHostel, unassignedRooms]);
 
   const blocks = useMemo(() =>
     [...new Set(hostelRooms.map(r => r.block).filter(Boolean))].sort(),
@@ -93,6 +97,7 @@ export default function RoomsPage() {
   };
   const openEditHostel = (e, h) => {
     e.stopPropagation();
+    if (h.id === 'unassigned') return;
     setHostelForm({ name: h.name, gender: h.gender, description: h.description || '' });
     setEditHostelId(h.id); setShowHostelModal(true);
   };
@@ -112,6 +117,7 @@ export default function RoomsPage() {
   };
   const handleDeleteHostel = async (e, h) => {
     e.stopPropagation();
+    if (h.id === 'unassigned') return;
     if (!window.confirm(`Delete "${h.name}"? Rooms will be unlinked.`)) return;
     try {
       await api(`/api/hostels/${h.id}`, { method: 'DELETE' });
@@ -122,7 +128,7 @@ export default function RoomsPage() {
 
   // ─── Room CRUD ─────────────────────────────────────────────────────────────
   const openAddRoom = () => {
-    setRoomForm({ ...defaultRoomForm, hostel_id: selectedHostel?.id || '', block: selectedBlock||'', floor: selectedFloor||1, gender: selectedHostel?.gender||'Male' });
+    setRoomForm({ ...defaultRoomForm, hostel_id: selectedHostel?.id === 'unassigned' ? '' : (selectedHostel?.id || ''), block: selectedBlock||'', floor: selectedFloor||1, gender: selectedHostel?.gender||'Male' });
     setEditRoomId(null); setShowRoomModal(true);
   };
   const openEditRoom = (e, room) => {
@@ -220,6 +226,20 @@ export default function RoomsPage() {
     </div>
   );
 
+  // Add virtual Unassigned hostel if needed
+  const displayHostels = [...hostels];
+  if (unassignedRooms.length > 0) {
+    displayHostels.push({
+      id: 'unassigned',
+      name: 'Unassigned Rooms',
+      gender: 'Mixed',
+      total_rooms: unassignedRooms.length,
+      total_beds: unassignedRooms.reduce((s,r)=>s+(r.capacity||0),0),
+      occupied: unassignedRooms.reduce((s,r)=>s+(r.occupied||0),0),
+      available: unassignedRooms.reduce((s,r)=>s+((r.capacity||0)-(r.occupied||0)),0)
+    });
+  }
+
   return (
     <div className="page-enter">
 
@@ -261,18 +281,19 @@ export default function RoomsPage() {
         <div className="card" style={{ padding:0, overflow:'hidden' }}>
           <div style={{ padding:'14px 18px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <span style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--text-dim)' }}>Hostels</span>
-            <span className="badge badge-gray">{hostels.length}</span>
+            <span className="badge badge-gray">{displayHostels.length}</span>
           </div>
-          {hostels.length === 0 ? (
+          {displayHostels.length === 0 ? (
             <div style={{ padding:'32px 20px', textAlign:'center', color:'var(--text-dim)' }}>
               <div style={{ fontSize:32, marginBottom:8 }}>🏗️</div>
               <div style={{ fontWeight:600, marginBottom:4 }}>No hostels yet</div>
               <div style={{ fontSize:12 }}>Click "+ Add Hostel" to begin setup</div>
             </div>
-          ) : hostels.map(h => {
+          ) : displayHostels.map(h => {
             const active = selectedHostel?.id === h.id;
             const isMale = h.gender === 'Male';
-            const accentColor = isMale ? 'var(--primary)' : '#ec4899';
+            const isVirtual = h.id === 'unassigned';
+            const accentColor = isVirtual ? 'var(--warning)' : isMale ? 'var(--primary)' : '#ec4899';
             const pct = h.total_beds ? Math.round(h.occupied/h.total_beds*100) : 0;
             return (
               <div
@@ -285,7 +306,7 @@ export default function RoomsPage() {
                   padding:'14px 18px',
                   cursor:'pointer',
                   borderLeft: active ? `3px solid ${accentColor}` : '3px solid transparent',
-                  background: active ? `rgba(${isMale?'99,102,241':'236,72,153'},0.07)` : 'transparent',
+                  background: active ? (isVirtual ? 'rgba(245,158,11,0.07)' : `rgba(${isMale?'99,102,241':'236,72,153'},0.07)`) : 'transparent',
                   transition:'all .18s',
                   borderBottom:'1px solid var(--border)',
                 }}
@@ -295,14 +316,14 @@ export default function RoomsPage() {
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontWeight:700, fontSize:13, color: active ? accentColor : 'var(--text)', display:'flex', alignItems:'center', gap:5 }}>
-                      <span style={{ fontSize:16 }}>{isMale ? '♂' : '♀'}</span>
+                      <span style={{ fontSize:16 }}>{isVirtual ? '⚠️' : isMale ? '♂' : '♀'}</span>
                       <span style={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{h.name}</span>
                     </div>
                     <div style={{ fontSize:11, color:'var(--text-dim)', marginTop:3 }}>
                       {h.total_rooms} rooms · {h.total_beds} beds
                     </div>
                   </div>
-                  {canManage && active && (
+                  {canManage && active && !isVirtual && (
                     <div style={{ display:'flex', gap:2, flexShrink:0, marginLeft:4 }}>
                       <button onClick={e => openEditHostel(e, h)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-dim)', fontSize:13, padding:'2px 4px' }}>✏️</button>
                       <button onClick={e => handleDeleteHostel(e, h)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--danger)', fontSize:13, padding:'2px 4px' }}>🗑️</button>
@@ -331,7 +352,7 @@ export default function RoomsPage() {
               <p style={{ color:'var(--text-muted)', fontSize:14 }}>
                 Choose a hostel from the left panel to explore its blocks, floors and rooms.
               </p>
-              {canManage && (
+              {canManage && hostels.length === 0 && (
                 <button className="btn btn-primary" style={{ marginTop:20 }} onClick={openAddHostel}>
                   + Create First Hostel
                 </button>
@@ -342,19 +363,21 @@ export default function RoomsPage() {
               {/* Hostel banner */}
               <div className="card" style={{
                 marginBottom:16, padding:'18px 22px',
-                background: selectedHostel.gender === 'Male'
-                  ? 'linear-gradient(135deg, rgba(37,99,235,0.08), rgba(99,102,241,0.04))'
-                  : 'linear-gradient(135deg, rgba(236,72,153,0.08), rgba(251,207,232,0.04))',
-                borderColor: selectedHostel.gender === 'Male' ? 'rgba(99,102,241,0.2)' : 'rgba(236,72,153,0.2)',
+                background: selectedHostel.id === 'unassigned'
+                  ? 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(251,191,36,0.04))'
+                  : selectedHostel.gender === 'Male'
+                    ? 'linear-gradient(135deg, rgba(37,99,235,0.08), rgba(99,102,241,0.04))'
+                    : 'linear-gradient(135deg, rgba(236,72,153,0.08), rgba(251,207,232,0.04))',
+                borderColor: selectedHostel.id === 'unassigned' ? 'rgba(245,158,11,0.2)' : selectedHostel.gender === 'Male' ? 'rgba(99,102,241,0.2)' : 'rgba(236,72,153,0.2)',
               }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                   <div>
                     <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
-                      <span style={{ fontSize:28 }}>{selectedHostel.gender === 'Male' ? '♂' : '♀'}</span>
+                      <span style={{ fontSize:28 }}>{selectedHostel.id === 'unassigned' ? '⚠️' : selectedHostel.gender === 'Male' ? '♂' : '♀'}</span>
                       <div>
                         <div style={{ fontWeight:800, fontSize:18, color:'var(--text)' }}>{selectedHostel.name}</div>
                         <div style={{ fontSize:12, color:'var(--text-muted)' }}>
-                          {selectedHostel.description || `${selectedHostel.gender === 'Male' ? "Boys'" : "Girls'"} Hostel`}
+                          {selectedHostel.id === 'unassigned' ? 'These rooms need to be assigned to a hostel.' : (selectedHostel.description || `${selectedHostel.gender === 'Male' ? "Boys'" : "Girls'"} Hostel`)}
                         </div>
                       </div>
                     </div>
@@ -364,7 +387,7 @@ export default function RoomsPage() {
                       <span style={{ fontSize:12, color:'var(--success)', fontWeight:600 }}>✅ {selectedHostel.available} available</span>
                     </div>
                   </div>
-                  {canManage && (
+                  {canManage && selectedHostel.id !== 'unassigned' && (
                     <button className="btn btn-primary btn-sm" onClick={openAddRoom}>+ Add Room</button>
                   )}
                 </div>
