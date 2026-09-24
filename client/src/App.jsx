@@ -22,6 +22,7 @@ import DepartmentsPage from './pages/DepartmentsPage';
 import AuditLogPage from './pages/AuditLogPage';
 import LobbyDisplay from './pages/LobbyDisplay';
 import UsersPage from './pages/UsersPage';
+import ChatbotBubble from './components/ChatbotBubble';
 import { io } from 'socket.io-client';
 
 // All page metadata — label, icon, component
@@ -380,6 +381,9 @@ function MainLayout() {
           <span className="sos-text">SOS</span>
         </button>
       )}
+
+      {/* Chatbot (Student only) */}
+      <ChatbotBubble />
 
       {/* Global Search (Ctrl+K) */}
       {searchOpen && (
