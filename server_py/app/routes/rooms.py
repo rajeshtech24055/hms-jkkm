@@ -1,26 +1,32 @@
-from typing import Optional, List
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
 from app.database import get_db
 from app.dependencies import get_current_user, require_roles
-from app.models.models import Room, Student, Institution, Department, EntryExitLog
+from app.models.models import Room, Student, Institution, Department, EntryExitLog, Hostel
 
 router = APIRouter(prefix="/api/rooms", tags=["Rooms"])
 
+
 class RoomCreate(BaseModel):
     room_no: str
-    block: Optional[str] = "A"
+    block: Optional[str] = None
     floor: Optional[int] = 1
     capacity: Optional[int] = 4
     gender: str
-    institution_id: int
+    hostel_id: Optional[int] = None
+    institution_id: Optional[int] = None  # kept for student assignment compatibility
+
 
 @router.get("")
 def get_rooms(
-    institution_id: Optional[int] = None,
+    hostel_id: Optional[int] = None,
+    block: Optional[str] = None,
+    floor: Optional[int] = None,
     gender: Optional[str] = None,
+    institution_id: Optional[int] = None,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -28,11 +34,21 @@ def get_rooms(
         Room,
         Institution.name.label("institution_name"),
         Institution.code.label("institution_code"),
+        Hostel.name.label("hostel_name"),
+        Hostel.gender.label("hostel_gender"),
         func.count(Student.id).label("occupied")
     ).outerjoin(Institution, Room.institution_id == Institution.id)\
+     .outerjoin(Hostel, Room.hostel_id == Hostel.id)\
      .outerjoin(Student, (Student.room_id == Room.id) & (Student.active == 1))\
-     .group_by(Room.id, Institution.name, Institution.code)
+     .group_by(Room.id, Institution.name, Institution.code, Hostel.name, Hostel.gender)\
+     .order_by(Room.hostel_id.asc(), Room.block.asc(), Room.floor.asc(), Room.room_no.asc())
 
+    if hostel_id:
+        query = query.filter(Room.hostel_id == hostel_id)
+    if block:
+        query = query.filter(Room.block == block)
+    if floor is not None:
+        query = query.filter(Room.floor == floor)
     if institution_id:
         query = query.filter(Room.institution_id == institution_id)
     if gender:
@@ -43,7 +59,7 @@ def get_rooms(
     results = query.all()
     output = []
     for r in results:
-        room, inst_name, inst_code, occupied = r
+        room, inst_name, inst_code, hostel_name, hostel_gender, occupied = r
         output.append({
             "id": room.id,
             "room_no": room.room_no,
@@ -51,12 +67,16 @@ def get_rooms(
             "floor": room.floor,
             "capacity": room.capacity,
             "gender": room.gender,
+            "hostel_id": room.hostel_id,
+            "hostel_name": hostel_name,
+            "hostel_gender": hostel_gender,
             "institution_id": room.institution_id,
             "institution_name": inst_name,
             "institution_code": inst_code,
             "occupied": occupied or 0
         })
     return output
+
 
 @router.get("/{room_id}/students")
 def get_room_students(
@@ -97,6 +117,7 @@ def get_room_students(
         })
     return output
 
+
 @router.post("")
 def create_room(
     data: RoomCreate,
@@ -109,12 +130,14 @@ def create_room(
         floor=data.floor,
         capacity=data.capacity,
         gender=data.gender,
+        hostel_id=data.hostel_id,
         institution_id=data.institution_id
     )
     db.add(room)
     db.commit()
     db.refresh(room)
     return {"id": room.id, "message": "Room created successfully"}
+
 
 @router.put("/{room_id}")
 def update_room(
@@ -131,9 +154,11 @@ def update_room(
     room.floor = data.floor
     room.capacity = data.capacity
     room.gender = data.gender
+    room.hostel_id = data.hostel_id
     room.institution_id = data.institution_id
     db.commit()
     return {"success": True, "message": "Room updated successfully"}
+
 
 @router.delete("/{room_id}")
 def delete_room(

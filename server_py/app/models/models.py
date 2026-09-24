@@ -3,6 +3,15 @@ from sqlalchemy import Column, Integer, String, Float, Boolean, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import Base
 
+class Hostel(Base):
+    __tablename__ = "hostels"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    gender = Column(String, nullable=False)  # 'Male' or 'Female'
+    description = Column(String, nullable=True)
+
+    rooms = relationship("Room", back_populates="hostel")
+
 class Institution(Base):
     __tablename__ = "institutions"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -44,15 +53,17 @@ class User(Base):
 
 class Room(Base):
     __tablename__ = "rooms"
-    __table_args__ = (UniqueConstraint('room_no', 'institution_id', name='_room_inst_uc'),)
+    __table_args__ = (UniqueConstraint('room_no', 'hostel_id', name='_room_hostel_uc'),)
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     room_no = Column(String, nullable=False)
     block = Column(String, nullable=True)
     floor = Column(Integer, default=1)
     capacity = Column(Integer, default=4)
     gender = Column(String, nullable=False)
-    institution_id = Column(Integer, ForeignKey("institutions.id"))
+    hostel_id = Column(Integer, ForeignKey("hostels.id"), nullable=True)
+    institution_id = Column(Integer, ForeignKey("institutions.id"), nullable=True)  # kept for compatibility
 
+    hostel = relationship("Hostel", back_populates="rooms")
     institution = relationship("Institution", back_populates="rooms")
     students = relationship("Student", back_populates="room")
 
