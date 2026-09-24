@@ -58,7 +58,10 @@ export default function UsersPage() {
       const payload = {
         ...form,
         institution_id: form.institution_id ? parseInt(form.institution_id) : null,
-        dept_id: form.dept_id ? parseInt(form.dept_id) : null
+        dept_id: form.dept_id ? parseInt(form.dept_id) : null,
+        phone: form.phone || null,
+        year: form.year || null,
+        gender: form.gender || null
       };
       const res = await api(url, {
         method,
@@ -87,6 +90,7 @@ export default function UsersPage() {
     });
     setEditId(user.id);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id, name) => {
