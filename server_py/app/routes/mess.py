@@ -21,6 +21,9 @@ class MessItemCreate(BaseModel):
     lead_time_days: Optional[int] = 3
     supplier: Optional[str] = None
     unit_price: Optional[float] = 0.0
+    batch_no: Optional[str] = None
+    mfg_date: Optional[str] = None
+    exp_date: Optional[str] = None
 
 class UsageLogCreate(BaseModel):
     item_id: int
@@ -73,6 +76,9 @@ def create_mess_item(
         lead_time_days=data.lead_time_days or 3,
         supplier=data.supplier,
         unit_price=data.unit_price or 0.0,
+        batch_no=data.batch_no,
+        mfg_date=data.mfg_date,
+        exp_date=data.exp_date,
         created_at=datetime.utcnow().isoformat()
     )
     db.add(item)
@@ -100,6 +106,9 @@ def update_mess_item(
     item.lead_time_days = data.lead_time_days or 3
     item.supplier = data.supplier
     item.unit_price = data.unit_price or 0.0
+    item.batch_no = data.batch_no
+    item.mfg_date = data.mfg_date
+    item.exp_date = data.exp_date
     item.updated_at = datetime.utcnow().isoformat()
     
     db.commit()
