@@ -79,6 +79,8 @@ def get_students(
     institution_id: Optional[int] = None,
     dept_id: Optional[int] = None,
     gender: Optional[str] = None,
+    year: Optional[str] = None,
+    active: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -100,6 +102,13 @@ def get_students(
         query = query.filter(Student.dept_id == dept_id)
     if gender:
         query = query.filter(Student.gender == gender)
+    if year:
+        query = query.filter(Student.year == year)
+    if active:
+        if active == "active":
+            query = query.filter(Student.active == 1)
+        elif active == "vacated":
+            query = query.filter(Student.active == 0)
 
     # Tutor/HOD filtering
     if current_user["role"] == "TUTOR" and current_user.get("dept_id"):
