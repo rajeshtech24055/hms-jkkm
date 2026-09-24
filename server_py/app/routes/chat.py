@@ -5,7 +5,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from app.database.database import get_db
+from app.database import get_db
 from app.models.models import StudentChatMessage, User, LeaveApplication, MessItem
 from app.dependencies import get_current_user
 import google.generativeai as genai
