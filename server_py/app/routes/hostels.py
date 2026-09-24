@@ -22,7 +22,10 @@ def get_hostels(
     db: Session = Depends(get_db)
 ):
     """List all hostels with room/bed summary stats."""
-    hostels = db.query(Hostel).order_by(Hostel.id.asc()).all()
+    query = db.query(Hostel).order_by(Hostel.id.asc())
+    if current_user["role"] == "WARDEN" and current_user.get("gender"):
+        query = query.filter(Hostel.gender == current_user["gender"])
+    hostels = query.all()
     output = []
     for h in hostels:
         rooms = db.query(Room).filter(Room.hostel_id == h.id).all()
