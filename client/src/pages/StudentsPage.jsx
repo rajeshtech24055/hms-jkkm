@@ -598,7 +598,13 @@ export default function StudentsPage() {
                   <label className="form-label">Room Assignment *</label>
                   <select className="form-input" required value={form.room_id} onChange={e => setForm(f => ({ ...f, room_id: e.target.value }))}>
                     <option value="">Select Room</option>
-                    {rooms.filter(r => (!form.institution_id || r.institution_id == form.institution_id) && (!form.gender || r.gender === form.gender)).map(r => <option key={r.id} value={r.id}>{r.room_no} ({r.block} Block)</option>)}
+                    {rooms
+                      .filter(r => 
+                        (!form.institution_id || !r.institution_id || r.institution_id == form.institution_id) && 
+                        (!form.gender || r.gender === form.gender) && 
+                        ((editId && r.id === parseInt(form.room_id)) || (r.capacity - (r.occupied || 0) > 0))
+                      )
+                      .map(r => <option key={r.id} value={r.id}>{r.room_no} ({r.block} Block) — {r.occupied || 0}/{r.capacity} occ.</option>)}
                   </select>
                 </div>
                 <div className="form-group">
@@ -682,10 +688,14 @@ export default function StudentsPage() {
                 <select className="form-input" value={assignRoomId} onChange={e => setAssignRoomId(e.target.value)}>
                   <option value="">— Unassigned —</option>
                   {rooms
-                    .filter(r => (!assigningStudent.institution_id || r.institution_id == assigningStudent.institution_id) && r.gender === assigningStudent.gender)
+                    .filter(r => 
+                      (!assigningStudent.institution_id || !r.institution_id || r.institution_id == assigningStudent.institution_id) && 
+                      r.gender === assigningStudent.gender &&
+                      (r.id === assigningStudent.room_id || (r.capacity - (r.occupied || 0) > 0))
+                    )
                     .map(r => (
                       <option key={r.id} value={r.id}>
-                        Room {r.room_no} — Block {r.block} ({r.occupied}/{r.capacity} occupied)
+                        Room {r.room_no} — Block {r.block} ({r.occupied || 0}/{r.capacity} occupied)
                       </option>
                     ))}
                 </select>
