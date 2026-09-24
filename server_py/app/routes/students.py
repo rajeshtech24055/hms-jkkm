@@ -110,7 +110,11 @@ def get_students(
         elif active == "vacated":
             query = query.filter(Student.active == 0)
 
-    # Tutor/HOD filtering
+    # Institution isolation (applies to all staff roles if they are assigned to an institution, except SUPER_ADMIN/HOSTEL_ADMIN who see all)
+    if current_user["role"] not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
+        query = query.filter(Student.institution_id == current_user["institution_id"])
+
+    # Role-specific filtering
     if current_user["role"] == "TUTOR" and current_user.get("dept_id"):
         query = query.filter(Student.dept_id == current_user["dept_id"])
         if current_user.get("year"):

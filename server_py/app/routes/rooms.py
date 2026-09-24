@@ -53,8 +53,12 @@ def get_rooms(
         query = query.filter(Room.institution_id == institution_id)
     if gender:
         query = query.filter(Room.gender == gender)
-    if current_user["role"] == "WARDEN" and current_user.get("gender"):
-        query = query.filter(Room.gender == current_user["gender"])
+        
+    if current_user["role"] not in ["SUPER_ADMIN", "HOSTEL_ADMIN"]:
+        if current_user.get("institution_id"):
+            query = query.filter((Room.institution_id == current_user["institution_id"]) | (Room.institution_id == None))
+        if current_user.get("gender") and current_user["role"] == "WARDEN":
+            query = query.filter(Room.gender == current_user["gender"])
 
     results = query.all()
     output = []
@@ -84,13 +88,18 @@ def get_room_students(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    students = db.query(
+    query = db.query(
         Student,
         Institution.code.label("institution_code"),
         Department.name.label("dept_name")
     ).outerjoin(Institution, Student.institution_id == Institution.id)\
      .outerjoin(Department, Student.dept_id == Department.id)\
-     .filter(Student.room_id == room_id, Student.active == 1).all()
+     .filter(Student.room_id == room_id, Student.active == 1)
+
+    if current_user["role"] not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
+        query = query.filter(Student.institution_id == current_user["institution_id"])
+
+    students = query.all()
 
     output = []
     for r in students:
