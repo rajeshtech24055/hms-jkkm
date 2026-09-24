@@ -1,49 +1,44 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-const GENDER_COLOR = { Male: '#6366f1', Female: '#ec4899' };
-const GENDER_BG = { Male: 'rgba(99,102,241,0.10)', Female: 'rgba(236,72,153,0.10)' };
-
 export default function RoomsPage() {
   const { api, user } = useAuth();
 
-  // Data
-  const [hostels, setHostels]       = useState([]);
-  const [rooms, setRooms]           = useState([]);
+  const [hostels, setHostels]         = useState([]);
+  const [rooms, setRooms]             = useState([]);
   const [institutions, setInstitutions] = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading]         = useState(true);
 
-  // Navigation state
-  const [selectedHostel, setSelectedHostel] = useState(null); // hostel object
-  const [selectedBlock, setSelectedBlock]   = useState(null); // block string
-  const [selectedFloor, setSelectedFloor]   = useState(null); // floor int
-  const [selectedRoom, setSelectedRoom]     = useState(null); // room object
+  // Navigation
+  const [selectedHostel, setSelectedHostel] = useState(null);
+  const [selectedBlock, setSelectedBlock]   = useState(null);
+  const [selectedFloor, setSelectedFloor]   = useState(null);
+  const [selectedRoom, setSelectedRoom]     = useState(null);
   const [roomStudents, setRoomStudents]     = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
 
-  // Modals
+  // Hostel modal
   const [showHostelModal, setShowHostelModal] = useState(false);
   const [editHostelId, setEditHostelId]       = useState(null);
   const [hostelForm, setHostelForm]           = useState({ name: '', gender: 'Male', description: '' });
 
+  // Room modal
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [editRoomId, setEditRoomId]       = useState(null);
   const defaultRoomForm = { room_no: '', block: '', floor: 1, capacity: 4, gender: 'Male', hostel_id: '', institution_id: '' };
-  const [roomForm, setRoomForm]           = useState(defaultRoomForm);
-  const [saving, setSaving] = useState(false);
+  const [roomForm, setRoomForm] = useState(defaultRoomForm);
+  const [saving, setSaving]     = useState(false);
 
   const canManage = ['SUPER_ADMIN', 'HOSTEL_ADMIN'].includes(user?.role);
 
-  // ── Load data ───────────────────────────────────────────────────────────────
+  // ─── Load ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     Promise.all([
       api('/api/hostels').catch(() => []),
       api('/api/rooms').catch(() => []),
       api('/api/institutions').catch(() => []),
     ]).then(([h, r, i]) => {
-      setHostels(h);
-      setRooms(r);
-      setInstitutions(i);
+      setHostels(h); setRooms(r); setInstitutions(i);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -52,164 +47,127 @@ export default function RoomsPage() {
       api('/api/hostels').catch(() => []),
       api('/api/rooms').catch(() => []),
     ]);
-    setHostels(h);
-    setRooms(r);
+    setHostels(h); setRooms(r);
   };
 
-  // ── Derived navigation data ──────────────────────────────────────────────────
+  // ─── Derived ───────────────────────────────────────────────────────────────
   const hostelRooms = useMemo(() =>
     selectedHostel ? rooms.filter(r => r.hostel_id === selectedHostel.id) : [],
-    [rooms, selectedHostel]
-  );
+    [rooms, selectedHostel]);
 
   const blocks = useMemo(() =>
     [...new Set(hostelRooms.map(r => r.block).filter(Boolean))].sort(),
-    [hostelRooms]
-  );
+    [hostelRooms]);
 
   const blockRooms = useMemo(() =>
     selectedBlock ? hostelRooms.filter(r => r.block === selectedBlock) : hostelRooms,
-    [hostelRooms, selectedBlock]
-  );
+    [hostelRooms, selectedBlock]);
 
   const floors = useMemo(() =>
     [...new Set(blockRooms.map(r => r.floor).filter(f => f != null))].sort((a,b) => a-b),
-    [blockRooms]
-  );
+    [blockRooms]);
 
   const visibleRooms = useMemo(() => {
-    let filtered = blockRooms;
-    if (selectedFloor != null) filtered = filtered.filter(r => r.floor === selectedFloor);
-    return filtered;
+    let f = blockRooms;
+    if (selectedFloor != null) f = f.filter(r => r.floor === selectedFloor);
+    return f;
   }, [blockRooms, selectedFloor]);
 
-  // ── Global stats ─────────────────────────────────────────────────────────────
   const globalStats = useMemo(() => {
-    const total_beds  = rooms.reduce((s, r) => s + (r.capacity || 0), 0);
-    const occupied    = rooms.reduce((s, r) => s + (r.occupied || 0), 0);
+    const total_beds = rooms.reduce((s,r) => s + (r.capacity||0), 0);
+    const occupied   = rooms.reduce((s,r) => s + (r.occupied||0), 0);
     return { total_rooms: rooms.length, total_beds, occupied, available: total_beds - occupied };
   }, [rooms]);
 
-  // ── Room click ───────────────────────────────────────────────────────────────
+  // ─── Room click ────────────────────────────────────────────────────────────
   const handleRoomClick = async (room) => {
-    setSelectedRoom(room);
-    setLoadingStudents(true);
-    setRoomStudents([]);
-    try {
-      const students = await api(`/api/rooms/${room.id}/students`);
-      setRoomStudents(students);
-    } catch { /* ignore */ }
-    finally { setLoadingStudents(false); }
+    setSelectedRoom(room); setLoadingStudents(true); setRoomStudents([]);
+    try { setRoomStudents(await api(`/api/rooms/${room.id}/students`)); }
+    catch { /* ignore */ } finally { setLoadingStudents(false); }
   };
 
-  // ── Hostel CRUD ───────────────────────────────────────────────────────────────
+  // ─── Hostel CRUD ───────────────────────────────────────────────────────────
   const openAddHostel = () => {
     setHostelForm({ name: '', gender: 'Male', description: '' });
-    setEditHostelId(null);
-    setShowHostelModal(true);
+    setEditHostelId(null); setShowHostelModal(true);
   };
   const openEditHostel = (e, h) => {
     e.stopPropagation();
     setHostelForm({ name: h.name, gender: h.gender, description: h.description || '' });
-    setEditHostelId(h.id);
-    setShowHostelModal(true);
+    setEditHostelId(h.id); setShowHostelModal(true);
   };
   const handleHostelSubmit = async (e) => {
     e.preventDefault();
     if (!hostelForm.name) return alert('Hostel name is required.');
     setSaving(true);
     try {
-      const url    = editHostelId ? `/api/hostels/${editHostelId}` : '/api/hostels';
-      const method = editHostelId ? 'PUT' : 'POST';
-      await api(url, { method, body: JSON.stringify(hostelForm) });
+      await api(editHostelId ? `/api/hostels/${editHostelId}` : '/api/hostels', {
+        method: editHostelId ? 'PUT' : 'POST',
+        body: JSON.stringify(hostelForm)
+      });
       setShowHostelModal(false);
       await refresh();
-      // Keep navigation in sync
-      if (editHostelId && selectedHostel?.id === editHostelId) {
-        setSelectedHostel(h => ({ ...h, ...hostelForm }));
-      }
-    } catch (err) { alert('Error: ' + err.message); }
+    } catch(err) { alert('Error: ' + err.message); }
     finally { setSaving(false); }
   };
-  const handleDeleteHostel = async (h) => {
-    if (!window.confirm(`Delete hostel "${h.name}"? All rooms will be unlinked.`)) return;
+  const handleDeleteHostel = async (e, h) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete "${h.name}"? Rooms will be unlinked.`)) return;
     try {
       await api(`/api/hostels/${h.id}`, { method: 'DELETE' });
-      if (selectedHostel?.id === h.id) { setSelectedHostel(null); setSelectedBlock(null); setSelectedFloor(null); }
+      if (selectedHostel?.id === h.id) { setSelectedHostel(null); setSelectedBlock(null); setSelectedFloor(null); setSelectedRoom(null); }
       await refresh();
-    } catch (err) { alert('Error: ' + err.message); }
+    } catch(err) { alert('Error: ' + err.message); }
   };
 
-  // ── Room CRUD ────────────────────────────────────────────────────────────────
+  // ─── Room CRUD ─────────────────────────────────────────────────────────────
   const openAddRoom = () => {
-    setRoomForm({
-      ...defaultRoomForm,
-      gender: selectedHostel?.gender || 'Male',
-      hostel_id: selectedHostel?.id || '',
-      block: selectedBlock || '',
-      floor: selectedFloor || 1,
-    });
-    setEditRoomId(null);
-    setShowRoomModal(true);
+    setRoomForm({ ...defaultRoomForm, hostel_id: selectedHostel?.id || '', block: selectedBlock||'', floor: selectedFloor||1, gender: selectedHostel?.gender||'Male' });
+    setEditRoomId(null); setShowRoomModal(true);
   };
   const openEditRoom = (e, room) => {
     e.stopPropagation();
-    setRoomForm({
-      room_no: room.room_no || '',
-      block: room.block || '',
-      floor: room.floor || 1,
-      capacity: room.capacity || 4,
-      gender: room.gender || 'Male',
-      hostel_id: room.hostel_id || '',
-      institution_id: room.institution_id || '',
-    });
-    setEditRoomId(room.id);
-    setShowRoomModal(true);
+    setRoomForm({ room_no: room.room_no||'', block: room.block||'', floor: room.floor||1, capacity: room.capacity||4, gender: room.gender||'Male', hostel_id: room.hostel_id||'', institution_id: room.institution_id||'' });
+    setEditRoomId(room.id); setShowRoomModal(true);
   };
   const handleRoomSubmit = async (e) => {
     e.preventDefault();
     if (!roomForm.room_no || !roomForm.gender) return alert('Room No and Gender are required.');
     setSaving(true);
     try {
-      const url    = editRoomId ? `/api/rooms/${editRoomId}` : '/api/rooms';
-      const method = editRoomId ? 'PUT' : 'POST';
-      const payload = {
-        ...roomForm,
-        floor: parseInt(roomForm.floor) || 1,
-        capacity: parseInt(roomForm.capacity) || 4,
-        hostel_id: roomForm.hostel_id ? parseInt(roomForm.hostel_id) : null,
-        institution_id: roomForm.institution_id ? parseInt(roomForm.institution_id) : null,
-      };
-      await api(url, { method, body: JSON.stringify(payload) });
-      setShowRoomModal(false);
-      setEditRoomId(null);
+      await api(editRoomId ? `/api/rooms/${editRoomId}` : '/api/rooms', {
+        method: editRoomId ? 'PUT' : 'POST',
+        body: JSON.stringify({ ...roomForm, floor: parseInt(roomForm.floor)||1, capacity: parseInt(roomForm.capacity)||4, hostel_id: roomForm.hostel_id ? parseInt(roomForm.hostel_id) : null, institution_id: roomForm.institution_id ? parseInt(roomForm.institution_id) : null })
+      });
+      setShowRoomModal(false); setEditRoomId(null);
       await refresh();
-    } catch (err) { alert('Error: ' + err.message); }
+    } catch(err) { alert('Error: ' + err.message); }
     finally { setSaving(false); }
   };
   const handleDeleteRoom = async (e, room) => {
     e.stopPropagation();
-    if (!window.confirm(`Delete Room ${room.room_no}? Students will be unassigned.`)) return;
+    if (!window.confirm(`Delete Room ${room.room_no}?`)) return;
     try {
       await api(`/api/rooms/${room.id}`, { method: 'DELETE' });
       if (selectedRoom?.id === room.id) setSelectedRoom(null);
       await refresh();
-    } catch (err) { alert('Error: ' + err.message); }
+    } catch(err) { alert('Error: ' + err.message); }
   };
 
-  // ── Render helpers ───────────────────────────────────────────────────────────
-  const OccupancyBar = ({ occupied, capacity }) => {
-    const pct  = capacity ? Math.min(100, Math.round((occupied / capacity) * 100)) : 0;
-    const full  = occupied >= capacity;
-    const color = full ? '#ef4444' : pct > 60 ? '#f59e0b' : '#22c55e';
+  // ─── Sub-components ────────────────────────────────────────────────────────
+  const OccBar = ({ occ, cap }) => {
+    const pct  = cap ? Math.min(100, Math.round(occ/cap*100)) : 0;
+    const cls  = pct >= 100 ? 'full' : pct > 60 ? 'mid' : 'low';
     return (
-      <div style={{ marginTop: 6 }}>
-        <div style={{ height: 5, background: 'rgba(255,255,255,0.1)', borderRadius: 3 }}>
-          <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width .4s' }} />
+      <div>
+        <div className="room-bar" style={{ marginTop: 8 }}>
+          <div className={`room-bar-fill ${cls}`} style={{ width: `${pct}%` }} />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginTop: 2, color: '#94a3b8' }}>
-          <span>{occupied}/{capacity} beds</span>
-          <span style={{ color }}>{full ? 'FULL' : pct === 0 ? 'EMPTY' : `${pct}%`}</span>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, marginTop:4, color:'var(--text-dim)' }}>
+          <span>{occ}/{cap} beds</span>
+          <span style={{ fontWeight:700, color: pct>=100?'var(--danger)':pct===0?'var(--success)':'var(--warning)' }}>
+            {pct>=100 ? 'FULL' : pct===0 ? 'EMPTY' : `${pct}%`}
+          </span>
         </div>
       </div>
     );
@@ -218,155 +176,147 @@ export default function RoomsPage() {
   const RoomCard = ({ room }) => {
     const full  = room.occupied >= room.capacity;
     const empty = room.occupied === 0;
-    const borderColor = full ? '#ef4444' : empty ? '#22c55e' : '#6366f1';
+    const accentColor = full ? 'var(--danger)' : empty ? 'var(--success)' : 'var(--primary)';
+    const isSelected  = selectedRoom?.id === room.id;
     return (
       <div
         onClick={() => handleRoomClick(room)}
+        className="room-card"
         style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: `1.5px solid ${borderColor}33`,
-          borderTop: `3px solid ${borderColor}`,
-          borderRadius: 10,
-          padding: '12px 14px',
-          cursor: 'pointer',
-          transition: 'all .2s',
+          borderTop: `3px solid ${accentColor}`,
+          borderColor: isSelected ? 'var(--primary)' : undefined,
+          boxShadow: isSelected ? '0 0 0 2px var(--primary)' : undefined,
+          textAlign: 'left',
+          padding: '14px',
           position: 'relative',
         }}
-        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9' }}>
-              Room {room.room_no}
-            </div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-              Floor {room.floor}
-            </div>
+            <div className="room-no" style={{ fontSize:17, marginBottom:2 }}>Room {room.room_no}</div>
+            <div className="room-block" style={{ fontSize:10 }}>Floor {room.floor}</div>
           </div>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            {canManage && (
-              <>
-                <button
-                  onClick={e => openEditRoom(e, room)}
-                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 13, padding: '2px 5px' }}
-                  title="Edit"
-                >✏️</button>
-                <button
-                  onClick={e => handleDeleteRoom(e, room)}
-                  style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 13, padding: '2px 5px' }}
-                  title="Delete"
-                >🗑️</button>
-              </>
-            )}
-            <span style={{
-              fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20,
-              background: full ? '#ef444422' : empty ? '#22c55e22' : '#6366f122',
-              color: full ? '#ef4444' : empty ? '#22c55e' : '#6366f1'
-            }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:4, alignItems:'flex-end' }}>
+            <span className={`badge badge-${full?'danger':empty?'success':'info'}`} style={{ fontSize:9 }}>
               {full ? 'FULL' : empty ? 'EMPTY' : 'OPEN'}
             </span>
+            {canManage && (
+              <div style={{ display:'flex', gap:2 }}>
+                <button onClick={e => openEditRoom(e, room)} title="Edit" style={{ background:'none', border:'none', fontSize:11, color:'var(--text-dim)', cursor:'pointer', padding:'2px 4px' }}>✏️</button>
+                <button onClick={e => handleDeleteRoom(e, room)} title="Delete" style={{ background:'none', border:'none', fontSize:11, color:'var(--danger)', cursor:'pointer', padding:'2px 4px' }}>🗑️</button>
+              </div>
+            )}
           </div>
         </div>
-        <OccupancyBar occupied={room.occupied} capacity={room.capacity} />
+        <OccBar occ={room.occupied} cap={room.capacity} />
       </div>
     );
   };
 
   if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-      <div style={{ textAlign: 'center', color: '#94a3b8' }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>🏠</div>
-        <div>Loading hostels…</div>
-      </div>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:300, color:'var(--text-dim)' }}>
+      <div style={{ fontSize:40, marginBottom:12 }}>🏠</div>
+      <div style={{ fontWeight:600 }}>Loading Room Management…</div>
     </div>
   );
 
   return (
-    <div className="page-enter" style={{ padding: '0 0 40px' }}>
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+    <div className="page-enter">
+
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#f1f5f9' }}>🏠 Room Management</h2>
-          <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 13 }}>
-            Manage hostels, blocks, floors and rooms in a structured hierarchy
+          <h2 style={{ fontSize:22, fontWeight:800, margin:0, color:'var(--text)' }}>🏠 Room Management</h2>
+          <p style={{ margin:'4px 0 0', color:'var(--text-muted)', fontSize:13 }}>
+            Manage hostels · blocks · floors · rooms in a structured hierarchy
           </p>
         </div>
         {canManage && (
-          <button className="btn btn-primary" onClick={openAddHostel} style={{ whiteSpace: 'nowrap' }}>
-            + Add Hostel
-          </button>
+          <button className="btn btn-primary" onClick={openAddHostel}>+ Add Hostel</button>
         )}
       </div>
 
-      {/* ── Global stats ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
+      {/* ── Global Stats ────────────────────────────────────────────────── */}
+      <div className="stats-grid" style={{ marginBottom:24, gridTemplateColumns:'repeat(auto-fill, minmax(160px,1fr))' }}>
         {[
-          { label: 'Total Rooms',  value: globalStats.total_rooms, icon: '🏠', color: '#6366f1' },
-          { label: 'Total Beds',   value: globalStats.total_beds,  icon: '🛏️', color: '#06b6d4' },
-          { label: 'Occupied',     value: globalStats.occupied,    icon: '👤', color: '#f59e0b' },
-          { label: 'Available',    value: globalStats.available,   icon: '✅', color: '#22c55e' },
-          { label: 'Boys Hostels', value: hostels.filter(h => h.gender === 'Male').length, icon: '♂', color: '#6366f1' },
-          { label: 'Girls Hostels',value: hostels.filter(h => h.gender === 'Female').length, icon: '♀', color: '#ec4899' },
-        ].map(stat => (
-          <div key={stat.label} style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 12, padding: '14px 16px', textAlign: 'center'
-          }}>
-            <div style={{ fontSize: 22, marginBottom: 4 }}>{stat.icon}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: stat.color }}>{stat.value}</div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{stat.label}</div>
+          { label:'Total Rooms',   value: globalStats.total_rooms,                              icon:'🚪', cls:'indigo' },
+          { label:'Total Beds',    value: globalStats.total_beds,                               icon:'🛏️', cls:'teal'   },
+          { label:'Occupied',      value: globalStats.occupied,                                  icon:'👤', cls:'amber'  },
+          { label:'Available',     value: globalStats.available,                                 icon:'✅', cls:'green'  },
+          { label:'Boys Hostels',  value: hostels.filter(h=>h.gender==='Male').length,          icon:'♂',  cls:'purple' },
+          { label:'Girls Hostels', value: hostels.filter(h=>h.gender==='Female').length,        icon:'♀',  cls:'rose'   },
+        ].map(s => (
+          <div key={s.label} className={`stat-card ${s.cls}`}>
+            <div className="stat-icon">{s.icon}</div>
+            <div className="stat-value">{s.value}</div>
+            <div className="stat-label">{s.label}</div>
           </div>
         ))}
       </div>
 
-      {/* ── Main layout ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: selectedRoom ? '260px 1fr 280px' : '260px 1fr', gap: 16, alignItems: 'start' }}>
+      {/* ── Main 3-panel layout ─────────────────────────────────────────── */}
+      <div style={{ display:'grid', gridTemplateColumns: selectedRoom ? '240px 1fr 300px' : '240px 1fr', gap:16, alignItems:'start' }}>
 
-        {/* ── LEFT: Hostel sidebar ── */}
-        <div style={{
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 14, overflow: 'hidden'
-        }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', fontSize: 12, fontWeight: 600, color: '#64748b', letterSpacing: 1, textTransform: 'uppercase' }}>
-            Hostels
+        {/* ── LEFT: Hostel list ── */}
+        <div className="card" style={{ padding:0, overflow:'hidden' }}>
+          <div style={{ padding:'14px 18px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--text-dim)' }}>Hostels</span>
+            <span className="badge badge-gray">{hostels.length}</span>
           </div>
           {hostels.length === 0 ? (
-            <div style={{ padding: 20, textAlign: 'center', color: '#475569', fontSize: 13 }}>
-              No hostels yet.<br />Click "Add Hostel" to start.
+            <div style={{ padding:'32px 20px', textAlign:'center', color:'var(--text-dim)' }}>
+              <div style={{ fontSize:32, marginBottom:8 }}>🏗️</div>
+              <div style={{ fontWeight:600, marginBottom:4 }}>No hostels yet</div>
+              <div style={{ fontSize:12 }}>Click "+ Add Hostel" to begin setup</div>
             </div>
           ) : hostels.map(h => {
             const active = selectedHostel?.id === h.id;
-            const gc = GENDER_COLOR[h.gender] || '#6366f1';
+            const isMale = h.gender === 'Male';
+            const accentColor = isMale ? 'var(--primary)' : '#ec4899';
+            const pct = h.total_beds ? Math.round(h.occupied/h.total_beds*100) : 0;
             return (
               <div
                 key={h.id}
                 onClick={() => {
-                  setSelectedHostel(active ? null : h);
-                  setSelectedBlock(null);
-                  setSelectedFloor(null);
-                  setSelectedRoom(null);
+                  if (active) { setSelectedHostel(null); setSelectedBlock(null); setSelectedFloor(null); setSelectedRoom(null); }
+                  else { setSelectedHostel(h); setSelectedBlock(null); setSelectedFloor(null); setSelectedRoom(null); }
                 }}
                 style={{
-                  padding: '12px 16px', cursor: 'pointer', borderLeft: active ? `3px solid ${gc}` : '3px solid transparent',
-                  background: active ? `${gc}11` : 'transparent',
-                  transition: 'all .2s', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                  padding:'14px 18px',
+                  cursor:'pointer',
+                  borderLeft: active ? `3px solid ${accentColor}` : '3px solid transparent',
+                  background: active ? `rgba(${isMale?'99,102,241':'236,72,153'},0.07)` : 'transparent',
+                  transition:'all .18s',
+                  borderBottom:'1px solid var(--border)',
                 }}
+                onMouseEnter={e => { if(!active) e.currentTarget.style.background='var(--bg-card2)'; }}
+                onMouseLeave={e => { if(!active) e.currentTarget.style.background='transparent'; }}
               >
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 13, color: active ? gc : '#cbd5e1' }}>
-                    {h.gender === 'Male' ? '♂' : '♀'} {h.name}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:700, fontSize:13, color: active ? accentColor : 'var(--text)', display:'flex', alignItems:'center', gap:5 }}>
+                      <span style={{ fontSize:16 }}>{isMale ? '♂' : '♀'}</span>
+                      <span style={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{h.name}</span>
+                    </div>
+                    <div style={{ fontSize:11, color:'var(--text-dim)', marginTop:3 }}>
+                      {h.total_rooms} rooms · {h.total_beds} beds
+                    </div>
                   </div>
-                  <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>
-                    {h.total_rooms} rooms · {h.occupied}/{h.total_beds} beds
-                  </div>
+                  {canManage && active && (
+                    <div style={{ display:'flex', gap:2, flexShrink:0, marginLeft:4 }}>
+                      <button onClick={e => openEditHostel(e, h)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-dim)', fontSize:13, padding:'2px 4px' }}>✏️</button>
+                      <button onClick={e => handleDeleteHostel(e, h)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--danger)', fontSize:13, padding:'2px 4px' }}>🗑️</button>
+                    </div>
+                  )}
                 </div>
-                {canManage && (
-                  <div style={{ display: 'flex', gap: 2, opacity: active ? 1 : 0 }} className="hostel-actions">
-                    <button onClick={e => openEditHostel(e, h)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 13 }}>✏️</button>
-                    <button onClick={e => { e.stopPropagation(); handleDeleteHostel(h); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 13 }}>🗑️</button>
-                  </div>
-                )}
+                {/* Mini progress */}
+                <div style={{ height:4, background:'var(--border)', borderRadius:2 }}>
+                  <div style={{ height:'100%', width:`${pct}%`, borderRadius:2, background: pct>=90?'var(--danger)':pct>60?'var(--warning)':'var(--success)', transition:'width .4s' }} />
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between', marginTop:4, fontSize:10, color:'var(--text-dim)' }}>
+                  <span style={{ color:'var(--danger)', fontWeight:600 }}>{h.occupied} occupied</span>
+                  <span style={{ color:'var(--success)', fontWeight:600 }}>{h.available} free</span>
+                </div>
               </div>
             );
           })}
@@ -375,87 +325,80 @@ export default function RoomsPage() {
         {/* ── CENTER: Block → Floor → Rooms ── */}
         <div>
           {!selectedHostel ? (
-            <div style={{
-              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 14, padding: 40, textAlign: 'center', color: '#475569'
-            }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🏠</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: '#94a3b8' }}>Select a Hostel</div>
-              <div style={{ fontSize: 13, marginTop: 6 }}>Choose a hostel from the left to view its blocks, floors and rooms.</div>
+            <div className="card" style={{ textAlign:'center', padding:'60px 40px' }}>
+              <div style={{ fontSize:56, marginBottom:16 }}>🏠</div>
+              <h3 style={{ fontWeight:700, marginBottom:8, color:'var(--text)' }}>Select a Hostel</h3>
+              <p style={{ color:'var(--text-muted)', fontSize:14 }}>
+                Choose a hostel from the left panel to explore its blocks, floors and rooms.
+              </p>
+              {canManage && (
+                <button className="btn btn-primary" style={{ marginTop:20 }} onClick={openAddHostel}>
+                  + Create First Hostel
+                </button>
+              )}
             </div>
           ) : (
             <>
-              {/* Hostel header */}
-              <div style={{
-                background: `linear-gradient(135deg, ${GENDER_COLOR[selectedHostel.gender] || '#6366f1'}22, rgba(0,0,0,0.3))`,
-                border: `1px solid ${GENDER_COLOR[selectedHostel.gender] || '#6366f1'}33`,
-                borderRadius: 14, padding: '16px 20px', marginBottom: 16,
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              {/* Hostel banner */}
+              <div className="card" style={{
+                marginBottom:16, padding:'18px 22px',
+                background: selectedHostel.gender === 'Male'
+                  ? 'linear-gradient(135deg, rgba(37,99,235,0.08), rgba(99,102,241,0.04))'
+                  : 'linear-gradient(135deg, rgba(236,72,153,0.08), rgba(251,207,232,0.04))',
+                borderColor: selectedHostel.gender === 'Male' ? 'rgba(99,102,241,0.2)' : 'rgba(236,72,153,0.2)',
               }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 18, color: '#f1f5f9' }}>
-                    {selectedHostel.gender === 'Male' ? '♂' : '♀'} {selectedHostel.name}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <div>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+                      <span style={{ fontSize:28 }}>{selectedHostel.gender === 'Male' ? '♂' : '♀'}</span>
+                      <div>
+                        <div style={{ fontWeight:800, fontSize:18, color:'var(--text)' }}>{selectedHostel.name}</div>
+                        <div style={{ fontSize:12, color:'var(--text-muted)' }}>
+                          {selectedHostel.description || `${selectedHostel.gender === 'Male' ? "Boys'" : "Girls'"} Hostel`}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', gap:16, marginTop:8 }}>
+                      <span style={{ fontSize:12, color:'var(--text-dim)' }}>🚪 {selectedHostel.total_rooms} rooms</span>
+                      <span style={{ fontSize:12, color:'var(--text-dim)' }}>🛏️ {selectedHostel.total_beds} beds</span>
+                      <span style={{ fontSize:12, color:'var(--success)', fontWeight:600 }}>✅ {selectedHostel.available} available</span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3 }}>
-                    {selectedHostel.description || `${selectedHostel.gender === 'Male' ? "Boys'" : "Girls'"} Hostel`}
-                    {' · '}
-                    <span style={{ color: '#22c55e' }}>{selectedHostel.available} available</span>
-                    {' of '}
-                    <span>{selectedHostel.total_beds} beds</span>
-                  </div>
+                  {canManage && (
+                    <button className="btn btn-primary btn-sm" onClick={openAddRoom}>+ Add Room</button>
+                  )}
                 </div>
-                {canManage && (
-                  <button className="btn btn-primary" onClick={openAddRoom} style={{ fontSize: 13 }}>
-                    + Add Room
-                  </button>
-                )}
               </div>
 
-              {/* Block tabs */}
+              {/* Block pills */}
               {blocks.length > 0 && (
-                <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+                <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap' }}>
                   <button
                     onClick={() => { setSelectedBlock(null); setSelectedFloor(null); }}
-                    style={{
-                      padding: '6px 16px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                      background: !selectedBlock ? '#6366f1' : 'rgba(255,255,255,0.07)',
-                      color: !selectedBlock ? '#fff' : '#94a3b8'
-                    }}
+                    className={!selectedBlock ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}
                   >All Blocks</button>
                   {blocks.map(b => (
                     <button
                       key={b}
                       onClick={() => { setSelectedBlock(b === selectedBlock ? null : b); setSelectedFloor(null); }}
-                      style={{
-                        padding: '6px 16px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                        background: selectedBlock === b ? '#6366f1' : 'rgba(255,255,255,0.07)',
-                        color: selectedBlock === b ? '#fff' : '#94a3b8'
-                      }}
+                      className={selectedBlock === b ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}
                     >Block {b}</button>
                   ))}
                 </div>
               )}
 
-              {/* Floor tabs */}
+              {/* Floor pills */}
               {floors.length > 0 && (
-                <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                <div style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap' }}>
                   <button
                     onClick={() => setSelectedFloor(null)}
-                    style={{
-                      padding: '5px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                      background: selectedFloor == null ? '#0ea5e9' : 'rgba(255,255,255,0.05)',
-                      color: selectedFloor == null ? '#fff' : '#94a3b8'
-                    }}
+                    style={{ padding:'4px 14px', borderRadius:20, border:'none', cursor:'pointer', fontSize:12, fontWeight:600, background: selectedFloor==null?'var(--secondary)':'var(--border)', color: selectedFloor==null?'#fff':'var(--text-muted)', transition:'all .15s' }}
                   >All Floors</button>
                   {floors.map(f => (
                     <button
                       key={f}
                       onClick={() => setSelectedFloor(f === selectedFloor ? null : f)}
-                      style={{
-                        padding: '5px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                        background: selectedFloor === f ? '#0ea5e9' : 'rgba(255,255,255,0.05)',
-                        color: selectedFloor === f ? '#fff' : '#94a3b8'
-                      }}
+                      style={{ padding:'4px 14px', borderRadius:20, border:'none', cursor:'pointer', fontSize:12, fontWeight:600, background: selectedFloor===f?'var(--secondary)':'var(--border)', color: selectedFloor===f?'#fff':'var(--text-muted)', transition:'all .15s' }}
                     >Floor {f}</button>
                   ))}
                 </div>
@@ -463,17 +406,13 @@ export default function RoomsPage() {
 
               {/* Room grid */}
               {visibleRooms.length === 0 ? (
-                <div style={{
-                  textAlign: 'center', padding: '40px 20px',
-                  background: 'rgba(255,255,255,0.02)', borderRadius: 12,
-                  color: '#475569', border: '1px dashed rgba(255,255,255,0.08)'
-                }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>🚪</div>
-                  No rooms here yet.
-                  {canManage && <div style={{ marginTop: 8 }}><button className="btn btn-primary" onClick={openAddRoom}>+ Add First Room</button></div>}
+                <div className="card" style={{ textAlign:'center', padding:'40px 24px', borderStyle:'dashed' }}>
+                  <div style={{ fontSize:36, marginBottom:8 }}>🚪</div>
+                  <div style={{ fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>No rooms here yet</div>
+                  {canManage && <button className="btn btn-primary btn-sm" onClick={openAddRoom}>+ Add First Room</button>}
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
+                <div className="rooms-grid" style={{ gridTemplateColumns:'repeat(auto-fill, minmax(155px,1fr))' }}>
                   {visibleRooms.map(room => <RoomCard key={room.id} room={room} />)}
                 </div>
               )}
@@ -483,96 +422,111 @@ export default function RoomsPage() {
 
         {/* ── RIGHT: Room detail panel ── */}
         {selectedRoom && (
-          <div style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 14, overflow: 'hidden', position: 'sticky', top: 80
-          }}>
+          <div className="card" style={{ padding:0, overflow:'hidden', position:'sticky', top:80 }}>
+            {/* Header */}
             <div style={{
-              padding: '14px 16px', background: 'rgba(99,102,241,0.12)',
-              borderBottom: '1px solid rgba(255,255,255,0.07)',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              padding:'16px 18px',
+              background: selectedRoom.gender==='Male'
+                ? 'linear-gradient(135deg,rgba(37,99,235,0.1),rgba(99,102,241,0.04))'
+                : 'linear-gradient(135deg,rgba(236,72,153,0.1),rgba(251,207,232,0.04))',
+              borderBottom:'1px solid var(--border)',
+              display:'flex', justifyContent:'space-between', alignItems:'flex-start'
             }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9' }}>Room {selectedRoom.room_no}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                  {selectedRoom.hostel_name} · Block {selectedRoom.block} · Floor {selectedRoom.floor}
+                <div style={{ fontWeight:800, fontSize:16, color:'var(--text)' }}>Room {selectedRoom.room_no}</div>
+                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:3 }}>
+                  {selectedRoom.hostel_name || '—'} · {selectedRoom.block ? `Block ${selectedRoom.block}` : ''} · Floor {selectedRoom.floor}
                 </div>
               </div>
-              <button onClick={() => setSelectedRoom(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 18 }}>×</button>
+              <button onClick={() => setSelectedRoom(null)} className="modal-close" style={{ flexShrink:0 }}>×</button>
             </div>
-            <div style={{ padding: '14px 16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-                {[
-                  { label: 'Capacity', value: selectedRoom.capacity },
-                  { label: 'Occupied', value: selectedRoom.occupied },
-                  { label: 'Available', value: selectedRoom.capacity - selectedRoom.occupied },
-                  { label: 'Gender', value: selectedRoom.gender },
-                ].map(s => (
-                  <div key={s.label} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '10px 6px' }}>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: '#6366f1' }}>{s.value}</div>
-                    <div style={{ fontSize: 10, color: '#64748b' }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
 
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
+            {/* Stats grid */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:'var(--border)', borderBottom:'1px solid var(--border)' }}>
+              {[
+                { label:'Capacity', value: selectedRoom.capacity, color:'var(--primary)' },
+                { label:'Occupied', value: selectedRoom.occupied, color:'var(--warning)' },
+                { label:'Free Beds', value: selectedRoom.capacity - selectedRoom.occupied, color:'var(--success)' },
+                { label:'Gender', value: selectedRoom.gender, color: selectedRoom.gender==='Male'?'var(--primary)':'#ec4899' },
+              ].map(s => (
+                <div key={s.label} style={{ background:'var(--bg-card)', padding:'12px 14px', textAlign:'center' }}>
+                  <div style={{ fontSize:20, fontWeight:800, color:s.color }}>{s.value}</div>
+                  <div style={{ fontSize:10, fontWeight:600, color:'var(--text-dim)', textTransform:'uppercase', letterSpacing:'0.06em', marginTop:2 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Occupancy bar */}
+            <div style={{ padding:'12px 18px', borderBottom:'1px solid var(--border)' }}>
+              <OccBar occ={selectedRoom.occupied} cap={selectedRoom.capacity} />
+            </div>
+
+            {/* Student list */}
+            <div style={{ padding:'12px 18px' }}>
+              <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--text-dim)', marginBottom:10 }}>
                 Students ({loadingStudents ? '…' : roomStudents.length})
               </div>
               {loadingStudents ? (
-                <div style={{ textAlign: 'center', color: '#475569', padding: 20 }}>Loading…</div>
+                <div style={{ textAlign:'center', padding:20, color:'var(--text-dim)' }}>Loading…</div>
               ) : roomStudents.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#475569', padding: 16, fontSize: 13 }}>No students assigned</div>
-              ) : roomStudents.map(s => (
-                <div key={s.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)'
-                }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: '50%',
-                    background: s.last_direction === 'OUT' ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, flexShrink: 0
-                  }}>
-                    {s.last_direction === 'OUT' ? '🚶' : '🏠'}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
-                    <div style={{ fontSize: 10, color: '#64748b' }}>Bed {s.bed_no || '—'} · {s.dept_name || '—'}</div>
-                  </div>
+                <div style={{ textAlign:'center', padding:'20px 0', color:'var(--text-dim)', fontSize:13 }}>
+                  <div style={{ fontSize:24, marginBottom:6 }}>🛏️</div>
+                  No students assigned yet
                 </div>
-              ))}
+              ) : (
+                <div style={{ maxHeight:320, overflowY:'auto' }}>
+                  {roomStudents.map(s => (
+                    <div key={s.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
+                      <div style={{
+                        width:32, height:32, borderRadius:'50%', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700,
+                        background: s.last_direction==='OUT' ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
+                        color: s.last_direction==='OUT' ? 'var(--danger)' : 'var(--success)',
+                      }}>
+                        {s.name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:600, fontSize:13, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{s.name}</div>
+                        <div style={{ fontSize:10, color:'var(--text-dim)' }}>Bed {s.bed_no||'—'} · {s.dept_name||'—'}</div>
+                      </div>
+                      <span className={`badge badge-${s.last_direction==='OUT'?'danger':'success'}`} style={{ fontSize:9, flexShrink:0 }}>
+                        {s.last_direction==='OUT' ? 'OUT' : 'IN'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
 
-      {/* ── Hostel Modal ── */}
+      {/* ── Hostel Modal ─────────────────────────────────────────────────── */}
       {showHostelModal && (
         <div className="modal-overlay" onClick={() => setShowHostelModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 440 }}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth:440 }}>
             <div className="modal-header">
               <span className="modal-title">{editHostelId ? '✏️ Edit Hostel' : '🏠 Add New Hostel'}</span>
               <button className="modal-close" onClick={() => setShowHostelModal(false)}>×</button>
             </div>
-            <form onSubmit={handleHostelSubmit} style={{ padding: '20px 24px' }}>
+            <form onSubmit={handleHostelSubmit}>
               <div className="form-group">
-                <label>Hostel Name *</label>
-                <input className="input" placeholder="e.g. Boys Hostel Block A" value={hostelForm.name}
+                <label className="form-label">Hostel Name *</label>
+                <input className="form-input" placeholder="e.g. JKKM Boys Hostel" value={hostelForm.name}
                   onChange={e => setHostelForm({ ...hostelForm, name: e.target.value })} required />
               </div>
               <div className="form-group">
-                <label>Gender *</label>
-                <select className="input" value={hostelForm.gender} onChange={e => setHostelForm({ ...hostelForm, gender: e.target.value })}>
+                <label className="form-label">Gender *</label>
+                <select className="form-input" value={hostelForm.gender} onChange={e => setHostelForm({ ...hostelForm, gender: e.target.value })}>
                   <option value="Male">♂ Boys (Male)</option>
                   <option value="Female">♀ Girls (Female)</option>
                 </select>
               </div>
               <div className="form-group">
-                <label>Description</label>
-                <input className="input" placeholder="Optional short description" value={hostelForm.description}
+                <label className="form-label">Description <span style={{ textTransform:'none', fontWeight:400, color:'var(--text-dim)' }}>(optional)</span></label>
+                <input className="form-input" placeholder="Short description" value={hostelForm.description}
                   onChange={e => setHostelForm({ ...hostelForm, description: e.target.value })} />
               </div>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+              <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:8 }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setShowHostelModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : editHostelId ? '💾 Save Changes' : '+ Create Hostel'}</button>
               </div>
@@ -581,19 +535,19 @@ export default function RoomsPage() {
         </div>
       )}
 
-      {/* ── Room Modal ── */}
+      {/* ── Room Modal ───────────────────────────────────────────────────── */}
       {showRoomModal && (
         <div className="modal-overlay" onClick={() => setShowRoomModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth:520 }}>
             <div className="modal-header">
               <span className="modal-title">{editRoomId ? '✏️ Edit Room' : '🚪 Add New Room'}</span>
               <button className="modal-close" onClick={() => setShowRoomModal(false)}>×</button>
             </div>
-            <form onSubmit={handleRoomSubmit} style={{ padding: '20px 24px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <form onSubmit={handleRoomSubmit}>
+              <div className="form-grid">
                 <div className="form-group">
-                  <label>Hostel *</label>
-                  <select className="input" value={roomForm.hostel_id} onChange={e => {
+                  <label className="form-label">Hostel *</label>
+                  <select className="form-input" value={roomForm.hostel_id} onChange={e => {
                     const h = hostels.find(h => h.id === parseInt(e.target.value));
                     setRoomForm({ ...roomForm, hostel_id: e.target.value, gender: h?.gender || roomForm.gender });
                   }}>
@@ -602,41 +556,41 @@ export default function RoomsPage() {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Room Number *</label>
-                  <input className="input" placeholder="e.g. 101" value={roomForm.room_no}
+                  <label className="form-label">Room Number *</label>
+                  <input className="form-input" placeholder="e.g. 101" value={roomForm.room_no}
                     onChange={e => setRoomForm({ ...roomForm, room_no: e.target.value })} required />
                 </div>
                 <div className="form-group">
-                  <label>Block</label>
-                  <input className="input" placeholder="e.g. A" value={roomForm.block}
+                  <label className="form-label">Block</label>
+                  <input className="form-input" placeholder="e.g. A" value={roomForm.block}
                     onChange={e => setRoomForm({ ...roomForm, block: e.target.value })} />
                 </div>
                 <div className="form-group">
-                  <label>Floor</label>
-                  <input className="input" type="number" min={1} max={20} value={roomForm.floor}
+                  <label className="form-label">Floor</label>
+                  <input className="form-input" type="number" min={1} max={20} value={roomForm.floor}
                     onChange={e => setRoomForm({ ...roomForm, floor: e.target.value })} />
                 </div>
                 <div className="form-group">
-                  <label>Capacity (Beds)</label>
-                  <input className="input" type="number" min={1} max={20} value={roomForm.capacity}
+                  <label className="form-label">Capacity (Beds)</label>
+                  <input className="form-input" type="number" min={1} max={20} value={roomForm.capacity}
                     onChange={e => setRoomForm({ ...roomForm, capacity: e.target.value })} />
                 </div>
                 <div className="form-group">
-                  <label>Gender *</label>
-                  <select className="input" value={roomForm.gender} onChange={e => setRoomForm({ ...roomForm, gender: e.target.value })}>
+                  <label className="form-label">Gender *</label>
+                  <select className="form-input" value={roomForm.gender} onChange={e => setRoomForm({ ...roomForm, gender: e.target.value })}>
                     <option value="Male">♂ Boys</option>
                     <option value="Female">♀ Girls</option>
                   </select>
                 </div>
-                <div className="form-group" style={{ gridColumn: '1/-1' }}>
-                  <label>Linked Institution <span style={{ color: '#475569', fontWeight: 400 }}>(optional)</span></label>
-                  <select className="input" value={roomForm.institution_id} onChange={e => setRoomForm({ ...roomForm, institution_id: e.target.value })}>
+                <div className="form-group" style={{ gridColumn:'1/-1' }}>
+                  <label className="form-label">Linked Institution <span style={{ textTransform:'none', fontWeight:400, color:'var(--text-dim)' }}>(optional)</span></label>
+                  <select className="form-input" value={roomForm.institution_id} onChange={e => setRoomForm({ ...roomForm, institution_id: e.target.value })}>
                     <option value="">None (open to all)</option>
                     {institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
                   </select>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+              <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:8 }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setShowRoomModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : editRoomId ? '💾 Save Changes' : '+ Add Room'}</button>
               </div>
