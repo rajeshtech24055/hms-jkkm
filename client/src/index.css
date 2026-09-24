@@ -805,3 +805,9 @@ img { max-width: 100%; }
     padding: 12px 8px !important;
   }
 }
+
+/* --- Keep-alive status dot pulse animation --- */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.75); }
+}

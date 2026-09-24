@@ -131,7 +131,21 @@ app.include_router(mess_feedback.router)
 app.include_router(search.router)
 app.include_router(notifications.router)
 
-# 7. Wrap FastAPI app with Socket.IO ASGI app
+# 7. Keep-alive / Health-check endpoint (no auth required)
+import time as _time
+_start_time = _time.time()
+
+@app.get("/ping", tags=["Health"])
+def ping():
+    """Public health-check endpoint — used by the frontend keep-alive ping to prevent Render spin-down."""
+    return {
+        "status": "ok",
+        "service": "HMS JKKM API",
+        "uptime_seconds": round(_time.time() - _start_time),
+        "timestamp": __import__('datetime').datetime.utcnow().isoformat() + "Z"
+    }
+
+# 8. Wrap FastAPI app with Socket.IO ASGI app
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app)
 
 @app.on_event("startup")

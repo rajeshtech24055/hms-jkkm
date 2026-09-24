@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import Sidebar from './components/Sidebar';
@@ -190,6 +190,21 @@ function MainLayout() {
     else setActivePage('dashboard');
   }, [user]);
 
+  // ── Keep-alive: ping API every 14 min to prevent Render spin-down ──────────
+  const [apiOnline, setApiOnline] = React.useState(true);
+  React.useEffect(() => {
+    const API_URL = 'https://hms-jkkm-api.onrender.com/ping';
+    const doPing = () => {
+      fetch(API_URL, { method: 'GET', cache: 'no-store' })
+        .then(r => setApiOnline(r.ok))
+        .catch(() => setApiOnline(false));
+    };
+    doPing(); // ping immediately on mount
+    const timer = setInterval(doPing, 14 * 60 * 1000); // every 14 minutes
+    return () => clearInterval(timer);
+  }, []);
+  // ───────────────────────────────────────────────────────────────────────────
+
   const navigate = (page) => { setActivePage(page); setSidebarOpen(false); setMoreDrawerOpen(false); };
 
   const fetchNotifications = () => { api('/api/notifications').then(setNotifications).catch(console.error); };
@@ -223,6 +238,22 @@ function MainLayout() {
             </h1>
           </div>
           <div className="topbar-actions">
+            {/* API keep-alive status indicator */}
+            <span
+              title={apiOnline ? 'API Server: Online' : 'API Server: Offline or starting up…'}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                fontSize: 11, fontWeight: 600,
+                color: apiOnline ? 'var(--success)' : 'var(--danger)',
+                background: apiOnline ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                border: `1px solid ${apiOnline ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                borderRadius: 20, padding: '3px 10px', cursor: 'default',
+              }}
+              className="hide-mobile"
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: apiOnline ? 'var(--success)' : 'var(--danger)', display: 'inline-block', animation: apiOnline ? 'pulse 2s infinite' : 'none' }} />
+              {apiOnline ? 'API Live' : 'API Offline'}
+            </span>
             <button className="btn btn-ghost btn-icon" style={{ position:'relative' }} onClick={() => { fetchNotifications(); setShowNotifModal(true); }} title="Notifications">
               🔔 <span className="notif-dot" style={{ position:'absolute',top:6,right:6 }} />
             </button>
