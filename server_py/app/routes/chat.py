@@ -139,15 +139,23 @@ def send_chat_message(
     ]
 
     try:
-        model = genai.GenerativeModel(model_name="gemini-1.5-flash")
-        chat = model.start_chat(history=formatted_history)
-        
-        # We need to use the lower-level API or a specific setup for tools in SDK
-        # For simplicity and robust tool handling in v0.8.x:
+        # Load academic calendar
+        calendar_text = ""
+        cal_path = os.path.join(os.path.dirname(__file__), "..", "data", "academic_calendar.txt")
+        if os.path.exists(cal_path):
+            with open(cal_path, "r", encoding="utf-8") as f:
+                calendar_text = f.read()
+
+        sys_instr = (
+            "You are a helpful hostel assistant for a student. "
+            "You can answer questions about the menu, check leave status, and apply for leaves on their behalf.\n"
+            f"Here is the Academic Calendar for reference:\n{calendar_text}\n"
+        )
+
         model = genai.GenerativeModel(
             model_name="gemini-1.5-flash",
             tools=tools,
-            system_instruction="You are a helpful hostel assistant for a student. You can answer questions about the menu, check leave status, and apply for leaves on their behalf."
+            system_instruction=sys_instr
         )
         chat = model.start_chat(history=formatted_history)
         response = chat.send_message(data.message)
