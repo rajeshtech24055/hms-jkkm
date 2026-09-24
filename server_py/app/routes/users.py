@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/users", tags=["Users"])
 class UserCreate(BaseModel):
     name: str
     email: str = Field(pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-    password: str
+    password: Optional[str] = None
     role: str
     institution_id: Optional[int] = None
     dept_id: Optional[int] = None
@@ -91,10 +91,12 @@ def create_user(
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    default_pw = data.password if data.password else "password123"
+
     user = User(
         name=data.name,
         email=data.email,
-        password_hash=get_password_hash(data.password),
+        password_hash=get_password_hash(default_pw),
         role=data.role,
         institution_id=data.institution_id,
         dept_id=data.dept_id,
