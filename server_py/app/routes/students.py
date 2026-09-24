@@ -34,7 +34,7 @@ class StudentCreate(BaseModel):
     email: str = Field(pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     dob: Optional[str] = None
 
-    @field_validator('guardian_email', mode='before')
+    @field_validator('guardian_email', 'email', 'guardian_phone', 'mobile', mode='before')
     @classmethod
     def empty_str_to_none(cls, v):
         """Convert empty string to None so optional fields don't fail regex validation."""
@@ -60,6 +60,12 @@ class StudentUpdate(BaseModel):
     email: Optional[str] = Field(default=None, pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     dob: Optional[str] = None  # Format: YYYY-MM-DD (HTML date input)
 
+    @field_validator('guardian_email', 'email', 'guardian_phone', 'mobile', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == '' or v is None:
+            return None
+        return v
 class PromoteRequest(BaseModel):
     batch: Optional[str] = None
     from_year: Optional[str] = None
