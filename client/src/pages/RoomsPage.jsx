@@ -569,13 +569,20 @@ export default function RoomsPage() {
             <form onSubmit={handleRoomSubmit}>
               <div className="form-grid">
                 <div className="form-group">
+                  <label className="form-label">Gender *</label>
+                  <select className="form-input" value={roomForm.gender} onChange={e => setRoomForm({ ...roomForm, gender: e.target.value, hostel_id: '' })} disabled={!!roomForm.hostel_id}>
+                    <option value="Male">♂ Boys</option>
+                    <option value="Female">♀ Girls</option>
+                  </select>
+                </div>
+                <div className="form-group">
                   <label className="form-label">Hostel *</label>
                   <select className="form-input" value={roomForm.hostel_id} onChange={e => {
                     const h = hostels.find(h => h.id === parseInt(e.target.value));
                     setRoomForm({ ...roomForm, hostel_id: e.target.value, gender: h?.gender || roomForm.gender });
                   }}>
-                    <option value="">Select Hostel</option>
-                    {hostels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                    <option value="">Select Hostel (Optional)</option>
+                    {hostels.filter(h => h.gender === roomForm.gender).map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
@@ -597,13 +604,6 @@ export default function RoomsPage() {
                   <label className="form-label">Capacity (Beds)</label>
                   <input className="form-input" type="number" min={1} max={20} value={roomForm.capacity}
                     onChange={e => setRoomForm({ ...roomForm, capacity: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Gender *</label>
-                  <select className="form-input" value={roomForm.gender} onChange={e => setRoomForm({ ...roomForm, gender: e.target.value })}>
-                    <option value="Male">♂ Boys</option>
-                    <option value="Female">♀ Girls</option>
-                  </select>
                 </div>
                 <div className="form-group" style={{ gridColumn:'1/-1' }}>
                   <label className="form-label">Linked Institution <span style={{ textTransform:'none', fontWeight:400, color:'var(--text-dim)' }}>(optional)</span></label>

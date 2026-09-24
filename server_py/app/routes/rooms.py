@@ -146,18 +146,24 @@ def update_room(
     current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
     db: Session = Depends(get_db)
 ):
-    room = db.query(Room).filter(Room.id == room_id).first()
-    if not room:
-        raise HTTPException(status_code=404, detail="Room not found")
-    room.room_no = data.room_no
-    room.block = data.block
-    room.floor = data.floor
-    room.capacity = data.capacity
-    room.gender = data.gender
-    room.hostel_id = data.hostel_id
-    room.institution_id = data.institution_id
-    db.commit()
-    return {"success": True, "message": "Room updated successfully"}
+    try:
+        room = db.query(Room).filter(Room.id == room_id).first()
+        if not room:
+            raise HTTPException(status_code=404, detail="Room not found")
+        room.room_no = data.room_no
+        room.block = data.block
+        room.floor = data.floor
+        room.capacity = data.capacity
+        room.gender = data.gender
+        room.hostel_id = data.hostel_id
+        room.institution_id = data.institution_id
+        db.commit()
+        return {"success": True, "message": "Room updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/{room_id}")
@@ -166,10 +172,14 @@ def delete_room(
     current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
     db: Session = Depends(get_db)
 ):
-    # Unassign students
-    db.query(Student).filter(Student.room_id == room_id).update({"room_id": None})
-    room = db.query(Room).filter(Room.id == room_id).first()
-    if room:
-        db.delete(room)
-        db.commit()
-    return {"success": True, "message": "Room deleted and students unassigned"}
+    try:
+        # Unassign students
+        db.query(Student).filter(Student.room_id == room_id).update({"room_id": None})
+        room = db.query(Room).filter(Room.id == room_id).first()
+        if room:
+            db.delete(room)
+            db.commit()
+        return {"success": True, "message": "Room deleted and students unassigned"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
