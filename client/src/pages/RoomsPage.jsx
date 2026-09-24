@@ -240,6 +240,59 @@ export default function RoomsPage() {
     });
   }
 
+  const renderHostelRow = (h) => {
+    const active = selectedHostel?.id === h.id;
+    const isMale = h.gender === 'Male';
+    const isVirtual = h.id === 'unassigned';
+    const accentColor = isVirtual ? 'var(--warning)' : isMale ? 'var(--primary)' : '#ec4899';
+    const pct = h.total_beds ? Math.round(h.occupied/h.total_beds*100) : 0;
+    return (
+      <div
+        key={h.id}
+        onClick={() => {
+          if (active) { setSelectedHostel(null); setSelectedBlock(null); setSelectedFloor(null); setSelectedRoom(null); }
+          else { setSelectedHostel(h); setSelectedBlock(null); setSelectedFloor(null); setSelectedRoom(null); }
+        }}
+        style={{
+          padding:'14px 18px',
+          cursor:'pointer',
+          borderLeft: active ? `3px solid ${accentColor}` : '3px solid transparent',
+          background: active ? (isVirtual ? 'rgba(245,158,11,0.07)' : `rgba(${isMale?'99,102,241':'236,72,153'},0.07)`) : 'transparent',
+          transition:'all .18s',
+          borderBottom:'1px solid var(--border)',
+        }}
+        onMouseEnter={e => { if(!active) e.currentTarget.style.background='var(--bg-card2)'; }}
+        onMouseLeave={e => { if(!active) e.currentTarget.style.background='transparent'; }}
+      >
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontWeight:700, fontSize:13, color: active ? accentColor : 'var(--text)', display:'flex', alignItems:'center', gap:5 }}>
+              <span style={{ fontSize:16 }}>{isVirtual ? '⚠️' : isMale ? '♂' : '♀'}</span>
+              <span style={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{h.name}</span>
+            </div>
+            <div style={{ fontSize:11, color:'var(--text-dim)', marginTop:3 }}>
+              {h.total_rooms} rooms · {h.total_beds} beds
+            </div>
+          </div>
+          {canManage && active && !isVirtual && (
+            <div style={{ display:'flex', gap:2, flexShrink:0, marginLeft:4 }}>
+              <button onClick={e => openEditHostel(e, h)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-dim)', fontSize:13, padding:'2px 4px' }}>✏️</button>
+              <button onClick={e => handleDeleteHostel(e, h)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--danger)', fontSize:13, padding:'2px 4px' }}>🗑️</button>
+            </div>
+          )}
+        </div>
+        {/* Mini progress */}
+        <div style={{ height:4, background:'var(--border)', borderRadius:2 }}>
+          <div style={{ height:'100%', width:`${pct}%`, borderRadius:2, background: pct>=90?'var(--danger)':pct>60?'var(--warning)':'var(--success)', transition:'width .4s' }} />
+        </div>
+        <div style={{ display:'flex', justifyContent:'space-between', marginTop:4, fontSize:10, color:'var(--text-dim)' }}>
+          <span style={{ color:'var(--danger)', fontWeight:600 }}>{h.occupied} occupied</span>
+          <span style={{ color:'var(--success)', fontWeight:600 }}>{h.available} free</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="page-enter">
 
@@ -289,58 +342,24 @@ export default function RoomsPage() {
               <div style={{ fontWeight:600, marginBottom:4 }}>No hostels yet</div>
               <div style={{ fontSize:12 }}>Click "+ Add Hostel" to begin setup</div>
             </div>
-          ) : displayHostels.map(h => {
-            const active = selectedHostel?.id === h.id;
-            const isMale = h.gender === 'Male';
-            const isVirtual = h.id === 'unassigned';
-            const accentColor = isVirtual ? 'var(--warning)' : isMale ? 'var(--primary)' : '#ec4899';
-            const pct = h.total_beds ? Math.round(h.occupied/h.total_beds*100) : 0;
-            return (
-              <div
-                key={h.id}
-                onClick={() => {
-                  if (active) { setSelectedHostel(null); setSelectedBlock(null); setSelectedFloor(null); setSelectedRoom(null); }
-                  else { setSelectedHostel(h); setSelectedBlock(null); setSelectedFloor(null); setSelectedRoom(null); }
-                }}
-                style={{
-                  padding:'14px 18px',
-                  cursor:'pointer',
-                  borderLeft: active ? `3px solid ${accentColor}` : '3px solid transparent',
-                  background: active ? (isVirtual ? 'rgba(245,158,11,0.07)' : `rgba(${isMale?'99,102,241':'236,72,153'},0.07)`) : 'transparent',
-                  transition:'all .18s',
-                  borderBottom:'1px solid var(--border)',
-                }}
-                onMouseEnter={e => { if(!active) e.currentTarget.style.background='var(--bg-card2)'; }}
-                onMouseLeave={e => { if(!active) e.currentTarget.style.background='transparent'; }}
-              >
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:700, fontSize:13, color: active ? accentColor : 'var(--text)', display:'flex', alignItems:'center', gap:5 }}>
-                      <span style={{ fontSize:16 }}>{isVirtual ? '⚠️' : isMale ? '♂' : '♀'}</span>
-                      <span style={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{h.name}</span>
-                    </div>
-                    <div style={{ fontSize:11, color:'var(--text-dim)', marginTop:3 }}>
-                      {h.total_rooms} rooms · {h.total_beds} beds
-                    </div>
-                  </div>
-                  {canManage && active && !isVirtual && (
-                    <div style={{ display:'flex', gap:2, flexShrink:0, marginLeft:4 }}>
-                      <button onClick={e => openEditHostel(e, h)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-dim)', fontSize:13, padding:'2px 4px' }}>✏️</button>
-                      <button onClick={e => handleDeleteHostel(e, h)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--danger)', fontSize:13, padding:'2px 4px' }}>🗑️</button>
-                    </div>
-                  )}
-                </div>
-                {/* Mini progress */}
-                <div style={{ height:4, background:'var(--border)', borderRadius:2 }}>
-                  <div style={{ height:'100%', width:`${pct}%`, borderRadius:2, background: pct>=90?'var(--danger)':pct>60?'var(--warning)':'var(--success)', transition:'width .4s' }} />
-                </div>
-                <div style={{ display:'flex', justifyContent:'space-between', marginTop:4, fontSize:10, color:'var(--text-dim)' }}>
-                  <span style={{ color:'var(--danger)', fontWeight:600 }}>{h.occupied} occupied</span>
-                  <span style={{ color:'var(--success)', fontWeight:600 }}>{h.available} free</span>
-                </div>
-              </div>
-            );
-          })}
+          ) : (
+            <>
+              {displayHostels.filter(h => h.gender === 'Male' && h.id !== 'unassigned').length > 0 && (
+                <div style={{ padding:'8px 18px', background:'rgba(0,0,0,0.03)', fontSize:10, fontWeight:700, color:'var(--text-dim)', letterSpacing:'0.05em' }}>BOYS HOSTELS</div>
+              )}
+              {displayHostels.filter(h => h.gender === 'Male' && h.id !== 'unassigned').map(renderHostelRow)}
+
+              {displayHostels.filter(h => h.gender === 'Female' && h.id !== 'unassigned').length > 0 && (
+                <div style={{ padding:'8px 18px', background:'rgba(0,0,0,0.03)', fontSize:10, fontWeight:700, color:'var(--text-dim)', letterSpacing:'0.05em' }}>GIRLS HOSTELS</div>
+              )}
+              {displayHostels.filter(h => h.gender === 'Female' && h.id !== 'unassigned').map(renderHostelRow)}
+
+              {displayHostels.filter(h => h.id === 'unassigned').length > 0 && (
+                <div style={{ padding:'8px 18px', background:'rgba(245,158,11,0.1)', fontSize:10, fontWeight:700, color:'var(--warning)', letterSpacing:'0.05em' }}>UNASSIGNED</div>
+              )}
+              {displayHostels.filter(h => h.id === 'unassigned').map(renderHostelRow)}
+            </>
+          )}
         </div>
 
         {/* ── CENTER: Block → Floor → Rooms ── */}

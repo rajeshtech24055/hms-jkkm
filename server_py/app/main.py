@@ -85,6 +85,13 @@ def _run_migrations():
                 """))
                 print("[MIGRATION] Seeded default hostels")
 
+            # 5. Drop outdated unique constraint on PostgreSQL
+            try:
+                # This drops the old (room_no, institution_id) constraint since room_no should be unique per hostel, not institution
+                conn.execute(text("ALTER TABLE rooms DROP CONSTRAINT IF EXISTS _room_inst_uc;"))
+            except Exception:
+                pass
+
         print("[MIGRATION] Database migration completed successfully")
     except Exception as e:
         print(f"[MIGRATION] Warning: {e}")
