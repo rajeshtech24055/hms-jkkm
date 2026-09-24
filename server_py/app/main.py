@@ -38,52 +38,59 @@ upload_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
 os.makedirs(upload_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
-# Apply database patches on startup
-from sqlalchemy import text
-@app.on_event("startup")
-def startup_event():
+# ── Run DB migrations IMMEDIATELY at import time (before app starts) ─────────
+# This ensures hostel_id column exists before any ORM query runs.
+from sqlalchemy import text, inspect as sa_inspect
+
+def _run_migrations():
     try:
         with engine.begin() as conn:
-            # Existing patches
-            try:
-                conn.execute(text("ALTER TABLE students ADD COLUMN dob VARCHAR;"))
-            except Exception:
-                pass
-            try:
-                conn.execute(text("ALTER TABLE students ADD COLUMN qr_token VARCHAR;"))
-            except Exception:
-                pass
-            # New: Create hostels table
-            try:
+            inspector = sa_inspect(engine)
+
+            # 1. Existing column patches on students
+            student_cols = [c['name'] for c in inspector.get_columns('students')]
+            if 'dob' not in student_cols:
+                try: conn.execute(text("ALTER TABLE students ADD COLUMN dob VARCHAR;"))
+                except Exception: pass
+            if 'qr_token' not in student_cols:
+                try: conn.execute(text("ALTER TABLE students ADD COLUMN qr_token VARCHAR;"))
+                except Exception: pass
+
+            # 2. Create hostels table if missing
+            existing_tables = inspector.get_table_names()
+            if 'hostels' not in existing_tables:
                 conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS hostels (
+                    CREATE TABLE hostels (
                         id SERIAL PRIMARY KEY,
                         name VARCHAR NOT NULL,
                         gender VARCHAR NOT NULL,
                         description VARCHAR
                     );
                 """))
-            except Exception:
-                pass
-            # New: Add hostel_id to rooms
-            try:
+                print("[MIGRATION] Created hostels table")
+
+            # 3. Add hostel_id to rooms if missing
+            room_cols = [c['name'] for c in inspector.get_columns('rooms')]
+            if 'hostel_id' not in room_cols:
                 conn.execute(text("ALTER TABLE rooms ADD COLUMN hostel_id INTEGER REFERENCES hostels(id);"))
-            except Exception:
-                pass
-            # Seed default hostels if none exist
-            try:
-                result = conn.execute(text("SELECT COUNT(*) FROM hostels"))
-                count = result.scalar()
-                if count == 0:
-                    conn.execute(text("""
-                        INSERT INTO hostels (name, gender, description) VALUES
-                        ('Boys Hostel', 'Male', 'Main Boys Hostel'),
-                        ('Girls Hostel', 'Female', 'Main Girls Hostel');
-                    """))
-            except Exception as e:
-                print(f"Hostel seed failed: {e}")
+                print("[MIGRATION] Added hostel_id column to rooms")
+
+            # 4. Seed default hostels if empty
+            count = conn.execute(text("SELECT COUNT(*) FROM hostels")).scalar()
+            if count == 0:
+                conn.execute(text("""
+                    INSERT INTO hostels (name, gender, description) VALUES
+                    ('Boys Hostel', 'Male', 'Main Boys Hostel'),
+                    ('Girls Hostel', 'Female', 'Main Girls Hostel');
+                """))
+                print("[MIGRATION] Seeded default hostels")
+
+        print("[MIGRATION] Database migration completed successfully")
     except Exception as e:
-        print(f"Failed to patch DB: {e}")
+        print(f"[MIGRATION] Warning: {e}")
+
+_run_migrations()
+
 
 # 5. Socket.IO Event Handlers
 @sio.event

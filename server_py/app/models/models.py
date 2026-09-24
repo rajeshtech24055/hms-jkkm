@@ -53,7 +53,7 @@ class User(Base):
 
 class Room(Base):
     __tablename__ = "rooms"
-    __table_args__ = (UniqueConstraint('room_no', 'hostel_id', name='_room_hostel_uc'),)
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     room_no = Column(String, nullable=False)
     block = Column(String, nullable=True)
@@ -61,7 +61,7 @@ class Room(Base):
     capacity = Column(Integer, default=4)
     gender = Column(String, nullable=False)
     hostel_id = Column(Integer, ForeignKey("hostels.id"), nullable=True)
-    institution_id = Column(Integer, ForeignKey("institutions.id"), nullable=True)  # kept for compatibility
+    institution_id = Column(Integer, ForeignKey("institutions.id"), nullable=True)
 
     hostel = relationship("Hostel", back_populates="rooms")
     institution = relationship("Institution", back_populates="rooms")
