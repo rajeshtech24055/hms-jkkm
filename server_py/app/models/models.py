@@ -395,3 +395,11 @@ class PurchaseOrder(Base):
     bill_image = Column(Text, nullable=True) # Base64 image
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
     updated_at = Column(String, nullable=True)
+
+class StudentChatMessage(Base):
+    __tablename__ = "student_chat_messages"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    student_id = Column(Integer, ForeignKey("users.id"))
+    role = Column(String, nullable=False) # 'user' or 'model'
+    content = Column(Text, nullable=False)
+    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())

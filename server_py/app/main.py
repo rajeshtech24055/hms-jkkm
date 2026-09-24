@@ -10,7 +10,7 @@ from app.routes import (
     auth, users, students, rooms, hostels, departments, gate, leaves, mess,
     mess_analytics, inventory, maintenance, vacate, sos, notices,
     ai_forecast, dashboard, analytics, audit, menu, mess_feedback,
-    search, notifications
+    search, notifications, chat
 )
 
 # 1. Import Socket.IO Server
@@ -137,6 +137,7 @@ app.include_router(menu.router)
 app.include_router(mess_feedback.router)
 app.include_router(search.router)
 app.include_router(notifications.router)
+app.include_router(chat.router)
 
 # 7. Keep-alive / Health-check endpoint (no auth required)
 import time as _time
