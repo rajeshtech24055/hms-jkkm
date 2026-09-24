@@ -6,6 +6,8 @@ services:
     buildCommand: "cd server_py && pip install -r requirements.txt"
     startCommand: "cd server_py && uvicorn app.main:socket_app --host 0.0.0.0 --port $PORT"
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.10.0"
       - key: DATABASE_URL
         value: postgresql://neondb_owner:npg_OE9GvTqV7xhw@ep-polished-firefly-b5ks1lky-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require
       - key: JWT_SECRET
