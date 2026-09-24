@@ -42,7 +42,8 @@ def get_users(
         Institution.name.label("institution_name"),
         Department.name.label("dept_name")
     ).outerjoin(Institution, User.institution_id == Institution.id)\
-     .outerjoin(Department, User.dept_id == Department.id)
+     .outerjoin(Department, User.dept_id == Department.id)\
+     .order_by(User.id.asc())
 
     if role:
         query = query.filter(User.role == role)
@@ -77,7 +78,7 @@ def get_staff_users(
 ):
     staff = db.query(User).filter(
         User.role.in_(["MAINTENANCE", "MESS_WORKER", "GATE_STAFF", "WARDEN"])
-    ).all()
+    ).order_by(User.id.asc()).all()
     return [{"id": u.id, "name": u.name, "role": u.role} for u in staff]
 
 @router.post("")

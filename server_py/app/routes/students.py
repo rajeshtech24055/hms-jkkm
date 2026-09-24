@@ -91,7 +91,8 @@ def get_students(
         Room.block
     ).outerjoin(Institution, Student.institution_id == Institution.id)\
      .outerjoin(Department, Student.dept_id == Department.id)\
-     .outerjoin(Room, Student.room_id == Room.id)
+     .outerjoin(Room, Student.room_id == Room.id)\
+     .order_by(Student.id.asc())
 
     if institution_id:
         query = query.filter(Student.institution_id == institution_id)
@@ -168,6 +169,7 @@ def get_student(
     ).outerjoin(Institution, Student.institution_id == Institution.id)\
      .outerjoin(Department, Student.dept_id == Department.id)\
      .outerjoin(Room, Student.room_id == Room.id)\
+     .order_by(Student.id.asc())\
      .filter(Student.id == student_id).first()
 
     if not r:
