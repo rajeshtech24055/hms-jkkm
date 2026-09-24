@@ -145,6 +145,7 @@ def get_students(
             "blood_group": student.blood_group,
             "mobile": student.mobile,
             "email": student.email,
+            "dob": student.dob,
             "photo_url": student.photo_url,
             "qr_token": student.qr_token,
             "active": student.active,
