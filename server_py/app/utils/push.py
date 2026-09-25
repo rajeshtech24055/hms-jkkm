@@ -49,14 +49,40 @@ def send_push_notification(token: str, title: str, body: str, data: dict = None)
         return False
 
 def notify_user(db, user_id: str, title: str, body: str, data: dict = None):
-    from app.models.models import DeviceToken
+    from app.models.models import DeviceToken, NotificationLog
+    
+    # Save to NotificationLog for Web UI
+    log_entry = NotificationLog(
+        user_id=int(user_id) if str(user_id).isdigit() else None,
+        type=title,
+        message=body,
+        status="SENT"
+    )
+    db.add(log_entry)
+    db.commit()
+    
+    # Send Push
     tokens = db.query(DeviceToken).filter(DeviceToken.user_id == str(user_id)).all()
     for t in tokens:
         send_push_notification(t.token, title, body, data)
 
 def notify_role(db, role: str, title: str, body: str, data: dict = None):
-    from app.models.models import DeviceToken, User
+    from app.models.models import DeviceToken, User, NotificationLog
     from sqlalchemy import cast, String
+    
+    # Save to NotificationLog for all users with this role
+    users = db.query(User).filter(User.role == role).all()
+    for u in users:
+        log_entry = NotificationLog(
+            user_id=u.id,
+            type=title,
+            message=body,
+            status="SENT"
+        )
+        db.add(log_entry)
+    db.commit()
+    
+    # Send Push
     tokens = db.query(DeviceToken).join(User, DeviceToken.user_id == cast(User.id, String)).filter(User.role == role).all()
     for t in tokens:
         send_push_notification(t.token, title, body, data)

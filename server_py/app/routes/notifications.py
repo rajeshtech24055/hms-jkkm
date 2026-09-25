@@ -18,10 +18,8 @@ def get_notifications(
     
     query = db.query(NotificationLog).order_by(NotificationLog.id.desc()).limit(20)
     
-    if user and user.phone:
-        # If user has a phone number, fetch their specific notifications
-        # For admins or wardens, we can also fetch general ones, but for now exact match:
-        logs = query.filter(NotificationLog.recipient_phone == user.phone).all()
+    if user_id:
+        logs = query.filter(NotificationLog.user_id == user_id).all()
     else:
         logs = []
         

@@ -313,6 +313,7 @@ class NotificationLog(Base):
     __tablename__ = "notification_logs"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     recipient_phone = Column(String, nullable=True)
+    user_id = Column(Integer, nullable=True)
     student_id = Column(Integer, nullable=True)
     student_name = Column(String, nullable=True)
     type = Column(String, nullable=True)
