@@ -153,7 +153,7 @@ def send_chat_message(
         )
 
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-flash-latest",
             tools=tools,
             system_instruction=sys_instr
         )
