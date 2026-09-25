@@ -116,22 +116,22 @@ def send_chat_message(
         {
             "name": "get_leave_status",
             "description": "Check the status of the student's recent leave applications.",
-            "parameters": {"type": "object", "properties": {}}
+            "parameters": {"type": "OBJECT", "properties": {}}
         },
         {
             "name": "get_weekly_menu",
             "description": "Get the weekly food menu for the mess/canteen.",
-            "parameters": {"type": "object", "properties": {}}
+            "parameters": {"type": "OBJECT", "properties": {}}
         },
         {
             "name": "apply_for_leave",
             "description": "Submit a leave application for the student.",
             "parameters": {
-                "type": "object",
+                "type": "OBJECT",
                 "properties": {
-                    "reason": {"type": "string", "description": "Reason for leave"},
-                    "start_date": {"type": "string", "description": "Start date in YYYY-MM-DD format"},
-                    "end_date": {"type": "string", "description": "End date in YYYY-MM-DD format"}
+                    "reason": {"type": "STRING", "description": "Reason for leave"},
+                    "start_date": {"type": "STRING", "description": "Start date in YYYY-MM-DD format"},
+                    "end_date": {"type": "STRING", "description": "End date in YYYY-MM-DD format"}
                 },
                 "required": ["reason", "start_date", "end_date"]
             }
