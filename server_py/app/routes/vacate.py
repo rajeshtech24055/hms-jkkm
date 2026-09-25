@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.dependencies import get_current_user, require_roles
 from app.models.models import HostelVacateRequest, Student, Department, Institution
+from app.utils.push import notify_role, notify_user
 
 router = APIRouter(prefix="/api/vacate", tags=["Vacate Requests"])
 
@@ -88,6 +89,9 @@ def create_vacate_request(
     )
     db.add(v)
     db.commit()
+    
+    notify_role(db, "WARDEN", "Vacate Request", "A new hostel vacate request was submitted.", {"type": "vacate"})
+    
     return {"id": v.id, "message": "Vacate clearance request submitted"}
 
 @router.post("/{vacate_id}/warden")
@@ -108,6 +112,9 @@ def warden_clearance(
     v.warden_remarks = data.remarks
     v.status = "PENDING_PRINCIPAL"
     db.commit()
+    
+    notify_role(db, "PRINCIPAL", "Vacate Clearance", "A vacate request requires Principal clearance.", {"type": "vacate"})
+    
     return {"success": True, "status": v.status}
 
 @router.post("/{vacate_id}/principal")
@@ -131,4 +138,7 @@ def principal_clearance(
         student.active = 0
 
     db.commit()
+    
+    notify_user(db, v.student_id, "Vacate Approved", "Your hostel vacate request has been fully approved.", {"type": "vacate"})
+    
     return {"success": True, "status": v.status}

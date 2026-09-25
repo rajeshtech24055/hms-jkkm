@@ -9,6 +9,7 @@ from app.models.models import (
     LeaveApplication, LeaveApproval, Student, User,
     Institution, Department, NotificationLog
 )
+from app.utils.push import notify_role, notify_user
 
 router = APIRouter(prefix="/api/leaves", tags=["Leaves"])
 
@@ -180,6 +181,9 @@ def apply_leave(
             message=f"🚨 EMERGENCY LEAVE requested by {student.name} ({student.reg_no}). Reason: {data.reason}. Immediate review required."
         ))
 
+    # Push Notification to Warden
+    notify_role(db, "WARDEN", "Leave Request", f"New leave requested by {student.name}", {"type": "leave"})
+
     db.commit()
     return {"id": leave.id, "status": leave.status, "message": "Leave submitted. Parent notified."}
 
@@ -230,6 +234,9 @@ def approve_leave(
                 f"📞 To discuss, contact the {approver_label}: {approver_phone}"
             )
             _notify_parent(db, student, "LEAVE_REJECTED", msg)
+        
+        # Push notification to student
+        notify_user(db, leave.student_id, "Leave Rejected", f"Your leave was rejected by {approver_name}.", {"type": "leave"})
 
     else:  # approved at this level
         if level >= 4:
@@ -252,9 +259,16 @@ def approve_leave(
                     f"  📞 Principal: {_get_approver_phone(db, 'PRINCIPAL', student)}"
                 )
                 _notify_parent(db, student, "LEAVE_APPROVED", msg)
+            
+            # Push notification to student
+            notify_user(db, leave.student_id, "Leave Fully Approved", f"Your leave has been fully approved.", {"type": "leave"})
+            
         else:
             leave.current_level = level + 1
             next_label, next_role = LEVEL_ROLE_LABEL[level + 1]
+            
+            # Push notification to the next approver
+            notify_role(db, next_role, "Leave Request Forwarded", f"Leave forwarded to you for {student.name}", {"type": "leave"})
             next_phone = _get_approver_phone(db, next_role, student) if student else "N/A"
 
             # ── Notify parent: forwarded to next level ──────────────────

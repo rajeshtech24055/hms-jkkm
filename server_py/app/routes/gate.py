@@ -9,6 +9,7 @@ from app.security import decode_token
 from app.dependencies import get_current_user, require_roles
 from app.models.models import Student, EntryExitLog, LeaveApplication, NotificationLog, Institution, Department
 from app.socket import sio
+from app.utils.push import notify_user
 
 router = APIRouter(prefix="/api/gate", tags=["Gate Scanner"])
 
@@ -129,6 +130,10 @@ def scan_gate(
                 }
             )
             
+            # Send push notification to student phone
+            notify_user(db, student.id, "Gate Scan Failed", "Unauthorized exit attempted - No approved leave.", {"type": "gate_scan"})
+            
+            
             return {
                 "success": False,
                 "reason": "No approved leave — Gate remains closed",
@@ -171,6 +176,13 @@ def scan_gate(
             used_leave.status = "completed"
 
     db.commit()
+    
+    # Notify Student
+    if direction == "OUT":
+        notify_user(db, student.id, "Checked Out", "You have successfully scanned OUT of the hostel.", {"type": "gate_scan"})
+    else:
+        notify_user(db, student.id, "Checked In", "You have successfully scanned IN to the hostel.", {"type": "gate_scan"})
+
 
     # Emit realtime update to dashboard
     background_tasks.add_task(

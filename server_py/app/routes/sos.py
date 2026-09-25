@@ -7,6 +7,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.models import SosIncident, Student
 from app.socket import sio
+from app.utils.push import notify_role, notify_user
 
 router = APIRouter(prefix="/api/sos", tags=["SOS Emergency"])
 
@@ -49,6 +50,12 @@ def trigger_sos(
         {"student_name": current_user["name"], "room_no": incident.room_no, "incident_id": incident.id}
     )
     
+    # Push Notifications to all admins
+    msg = f"EMERGENCY SOS Triggered by {current_user['name']} in Room {incident.room_no}"
+    notify_role(db, "WARDEN", "🚨 SOS ALERT 🚨", msg, {"type": "sos", "incident_id": str(incident.id)})
+    notify_role(db, "HOSTEL_ADMIN", "🚨 SOS ALERT 🚨", msg, {"type": "sos", "incident_id": str(incident.id)})
+    notify_role(db, "PRINCIPAL", "🚨 SOS ALERT 🚨", msg, {"type": "sos", "incident_id": str(incident.id)})
+    
     return {
         "success": True,
         "incident_id": incident.id,
@@ -70,6 +77,7 @@ def update_sos_status(
     if data.status == "RESOLVED":
         incident.resolved_by = current_user["id"]
         incident.resolved_at = datetime.utcnow().isoformat()
+        notify_user(db, incident.student_id, "SOS Resolved", "Your emergency request has been resolved by an administrator.", {"type": "sos"})
         
     db.commit()
     return {"success": True, "status": incident.status}
