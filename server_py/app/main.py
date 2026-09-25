@@ -27,12 +27,8 @@ app = FastAPI(
 # 3. Add CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "https://hms-jkkm-client.onrender.com",
-    ],
+    allow_origins=["http://localhost:3000", "http://localhost:5173"], # explicitly allow local
+    allow_origin_regex=".*", # ALLOW ALL DOMAINS PERMANENTLY
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
