@@ -7,7 +7,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.models import (
     LeaveApplication, LeaveApproval, Student, User,
-    Institution, Department, NotificationLog
+    Institution, Department, NotificationLog, EntryExitLog
 )
 from app.utils.push import notify_role, notify_user
 
@@ -138,6 +138,15 @@ def apply_leave(
     student = db.query(Student).filter(Student.id == data.student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+
+    # Check if student is currently outside
+    last_log = db.query(EntryExitLog).filter(
+        EntryExitLog.student_id == student.id,
+        EntryExitLog.flagged == 0
+    ).order_by(EntryExitLog.id.desc()).first()
+    
+    if last_log and last_log.direction == "OUT":
+        raise HTTPException(status_code=400, detail="You cannot apply for a leave while you are currently outside the hostel.")
 
     leave = LeaveApplication(
         student_id=data.student_id,
