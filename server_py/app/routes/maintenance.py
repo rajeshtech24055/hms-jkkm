@@ -22,10 +22,26 @@ def get_maintenance_requests(
     db: Session = Depends(get_db)
 ):
     query = db.query(MaintenanceRequest)
-    if current_user["role"] == "MAINTENANCE":
+    role = current_user["role"]
+    
+    if role == "STUDENT":
+        query = query.filter(MaintenanceRequest.raised_by == current_user["id"])
+    elif role == "MAINTENANCE":
         query = query.filter(
             (MaintenanceRequest.assigned_to == current_user["id"]) | (MaintenanceRequest.status == "pending")
         )
+    elif role == "WARDEN":
+        # Can see everything (Level 1, 2, 3) for their hostel theoretically, but for now we filter by Level >= 1
+        query = query.filter(MaintenanceRequest.current_level >= 1)
+    elif role == "HOSTEL_ADMIN":
+        # Hostel admin primarily sees escalated tickets (Level 2+) or all if they are admins
+        # For escalation tracking, let's filter those >= 2 so they can focus on escalated, 
+        # or they can see all. Let's make them see all, but the UI can highlight escalated ones.
+        pass
+    elif role == "PRINCIPAL":
+        # Principal only sees Level 3 highly escalated tickets
+        query = query.filter(MaintenanceRequest.current_level >= 3)
+        
     return query.order_by(MaintenanceRequest.id.desc()).all()
 
 @router.post("/api/maintenance")

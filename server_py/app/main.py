@@ -93,6 +93,16 @@ def _run_migrations():
             except Exception:
                 pass
 
+            # 6. Maintenance Escalation Fields
+            if 'maintenance_requests' in existing_tables:
+                maint_cols = [c['name'] for c in inspector.get_columns('maintenance_requests')]
+                if 'current_level' not in maint_cols:
+                    try: conn.execute(text("ALTER TABLE maintenance_requests ADD COLUMN current_level INTEGER DEFAULT 1;"))
+                    except Exception: pass
+                if 'last_escalated_at' not in maint_cols:
+                    try: conn.execute(text("ALTER TABLE maintenance_requests ADD COLUMN last_escalated_at VARCHAR;"))
+                    except Exception: pass
+
         print("[MIGRATION] Database migration completed successfully")
     except Exception as e:
         print(f"[MIGRATION] Warning: {e}")
@@ -158,12 +168,15 @@ def ping():
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app)
 
 from app.utils.push import init_firebase
+from app.utils.escalation_job import maintenance_escalation_loop
+import asyncio
 
 @app.on_event("startup")
 def on_startup():
     print("[INIT] Initializing Python FastAPI Engine & Database...")
     seed_database()
     init_firebase()
+    asyncio.create_task(maintenance_escalation_loop())
 
 if __name__ == "__main__":
     import uvicorn

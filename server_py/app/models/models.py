@@ -259,6 +259,11 @@ class MaintenanceRequest(Base):
     verified_by_student_id = Column(Integer, nullable=True)
     verified_at = Column(String, nullable=True)
     resolved_at = Column(String, nullable=True)
+    
+    # Escalation Fields
+    current_level = Column(Integer, default=1) # 1=Warden, 2=Hostel Admin, 3=Principal
+    last_escalated_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+    
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
 
 class Complaint(Base):
