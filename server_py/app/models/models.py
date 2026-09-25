@@ -403,3 +403,11 @@ class StudentChatMessage(Base):
     role = Column(String, nullable=False) # 'user' or 'model'
     content = Column(Text, nullable=False)
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+
+class DeviceToken(Base):
+    __tablename__ = "device_tokens"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String, nullable=False) # User ID or Student Reg No
+    user_type = Column(String, nullable=False) # 'STAFF' or 'STUDENT'
+    token = Column(String, nullable=False, unique=True)
+    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())

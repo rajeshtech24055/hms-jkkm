@@ -157,10 +157,13 @@ def ping():
 # 8. Wrap FastAPI app with Socket.IO ASGI app
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app)
 
+from app.utils.push import init_firebase
+
 @app.on_event("startup")
 def on_startup():
     print("[INIT] Initializing Python FastAPI Engine & Database...")
     seed_database()
+    init_firebase()
 
 if __name__ == "__main__":
     import uvicorn

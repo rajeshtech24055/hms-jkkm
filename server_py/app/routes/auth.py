@@ -5,7 +5,7 @@ from typing import Optional
 from app.database import get_db
 from app.security import verify_password, create_access_token, get_password_hash
 from app.dependencies import get_current_user
-from app.models.models import User, Student
+from app.models.models import User, Student, DeviceToken
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
@@ -125,3 +125,21 @@ def otp_verify(req: OtpVerifyRequest, db: Session = Depends(get_db)):
 @router.get("/me")
 def get_me(current_user: dict = Depends(get_current_user)):
     return current_user
+
+class RegisterTokenRequest(BaseModel):
+    token: str
+
+@router.post("/register-device-token")
+def register_device_token(req: RegisterTokenRequest, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    user_id = str(current_user.get('id', ''))
+    user_type = 'STUDENT' if current_user.get('role') == 'STUDENT' else 'STAFF'
+    
+    existing = db.query(DeviceToken).filter(DeviceToken.token == req.token).first()
+    if existing:
+        existing.user_id = user_id
+        existing.user_type = user_type
+    else:
+        new_token = DeviceToken(user_id=user_id, user_type=user_type, token=req.token)
+        db.add(new_token)
+    db.commit()
+    return {"success": True, "message": "Token registered successfully"}
