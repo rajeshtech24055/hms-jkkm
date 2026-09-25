@@ -85,7 +85,11 @@ def scan_gate(
     ).order_by(EntryExitLog.id.desc()).first()
 
     direction = "OUT" if (not last_log or last_log.direction == "IN") else "IN"
-    now_str = datetime.utcnow().isoformat()
+    
+    from datetime import timedelta, datetime
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    now_str = ist_now.isoformat() # For saving precise logs with seconds
+    cmp_str = ist_now.strftime("%Y-%m-%dT%H:%M") # For exact string comparison with leaves
 
     active_leave = None
     if direction == "OUT":
@@ -93,8 +97,8 @@ def scan_gate(
         active_leave = db.query(LeaveApplication).filter(
             LeaveApplication.student_id == student.id,
             LeaveApplication.status == "approved",
-            LeaveApplication.from_dt <= now_str,
-            LeaveApplication.to_dt >= now_str
+            LeaveApplication.from_dt <= cmp_str,
+            LeaveApplication.to_dt >= cmp_str
         ).first()
 
         if not active_leave:
