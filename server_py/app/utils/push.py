@@ -13,14 +13,26 @@ def init_firebase():
     except ValueError:
         # Not initialized yet
         try:
-            # We expect the user to place 'service_account.json' in the backend root
-            cred_path = os.path.join(os.getcwd(), 'service_account.json')
-            if os.path.exists(cred_path):
+            possible_paths = [
+                os.path.join(os.getcwd(), 'service_account.json'),
+                os.path.join(os.getcwd(), '..', 'service_account.json'),
+                '/etc/secrets/service_account.json',
+                '/opt/render/project/src/service_account.json',
+                '/opt/render/project/src/server_py/service_account.json'
+            ]
+            
+            cred_path = None
+            for p in possible_paths:
+                if os.path.exists(p):
+                    cred_path = p
+                    break
+                    
+            if cred_path:
                 cred = credentials.Certificate(cred_path)
                 firebase_admin.initialize_app(cred)
-                logger.info("Firebase Admin initialized successfully.")
+                logger.info(f"Firebase Admin initialized successfully from {cred_path}.")
             else:
-                logger.warning(f"Firebase credentials not found at {cred_path}. Push notifications will be disabled.")
+                logger.warning("Firebase credentials not found anywhere. Push notifications disabled.")
         except Exception as e:
             logger.error(f"Failed to initialize Firebase Admin: {e}")
 
