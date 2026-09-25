@@ -128,8 +128,10 @@ function HostelCard({ student, qrData }) {
           {[
             { label: 'Year', value: student.year },
             { label: 'Room', value: student.room_no || 'N/A' },
-            { label: 'Block', value: student.block || 'N/A' },
             { label: 'Blood Group', value: student.blood_group || 'N/A' },
+            { label: 'Mobile', value: student.mobile || 'N/A' },
+            { label: 'Email', value: student.email || 'N/A' },
+            { label: 'Guardian', value: `${student.guardian_name || ''} ${student.guardian_phone || ''}` },
           ].map(d => (
             <div key={d.label} className="hostel-card-detail">
               <span>{d.label}</span>
