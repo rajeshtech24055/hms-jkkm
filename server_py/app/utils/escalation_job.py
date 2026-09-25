@@ -60,8 +60,9 @@ async def maintenance_escalation_loop():
                         db.commit()
                         
                         # Notify the new target role via Push Notifications
+                        from sqlalchemy import cast, String
                         target_tokens = db.query(DeviceToken).join(
-                            User, DeviceToken.user_id == User.id.__str__()
+                            User, DeviceToken.user_id == cast(User.id, String)
                         ).filter(User.role == new_role_target).all()
                         
                         for token_record in target_tokens:

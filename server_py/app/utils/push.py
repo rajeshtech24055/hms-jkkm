@@ -56,6 +56,7 @@ def notify_user(db, user_id: str, title: str, body: str, data: dict = None):
 
 def notify_role(db, role: str, title: str, body: str, data: dict = None):
     from app.models.models import DeviceToken, User
-    tokens = db.query(DeviceToken).join(User, DeviceToken.user_id == User.id.__str__()).filter(User.role == role).all()
+    from sqlalchemy import cast, String
+    tokens = db.query(DeviceToken).join(User, DeviceToken.user_id == cast(User.id, String)).filter(User.role == role).all()
     for t in tokens:
         send_push_notification(t.token, title, body, data)
