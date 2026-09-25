@@ -22,7 +22,7 @@ def get_gate_logs(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    logs = db.query(
+    query = db.query(
         EntryExitLog,
         Student.name,
         Student.reg_no,
@@ -31,8 +31,22 @@ def get_gate_logs(
         Department.name.label("dept_name")
     ).join(Student, EntryExitLog.student_id == Student.id)\
      .outerjoin(Institution, Student.institution_id == Institution.id)\
-     .outerjoin(Department, Student.dept_id == Department.id)\
-     .order_by(EntryExitLog.id.desc()).limit(100).all()
+     .outerjoin(Department, Student.dept_id == Department.id)
+     
+    role = current_user["role"]
+    if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN", "GATE_STAFF"] and current_user.get("institution_id"):
+        query = query.filter(Student.institution_id == current_user["institution_id"])
+        
+    if role == "WARDEN" and current_user.get("gender"):
+        query = query.filter(Student.gender == current_user["gender"])
+    elif role == "TUTOR" and current_user.get("dept_id"):
+        query = query.filter(Student.dept_id == current_user["dept_id"])
+        if current_user.get("year"):
+            query = query.filter(Student.year == current_user["year"])
+    elif role == "HOD" and current_user.get("dept_id"):
+        query = query.filter(Student.dept_id == current_user["dept_id"])
+
+    logs = query.order_by(EntryExitLog.id.desc()).limit(100).all()
 
     output = []
     for l in logs:

@@ -18,48 +18,78 @@ def get_analytics_overview(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    total_students = db.query(Student).filter(Student.active == 1).count()
-    now_str = datetime.utcnow().isoformat()
+    role = current_user["role"]
+    
+    # Setup base queries with joins where needed
+    student_q = db.query(Student).filter(Student.active == 1)
+    room_q = db.query(Room)
+    
+    # Institution Isolation
+    if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
+        student_q = student_q.filter(Student.institution_id == current_user["institution_id"])
+        room_q = room_q.filter(Room.institution_id == current_user["institution_id"])
+        
+    # Gender Isolation for Wardens
+    if role == "WARDEN" and current_user.get("gender"):
+        student_q = student_q.filter(Student.gender == current_user["gender"])
+        room_q = room_q.filter(Room.gender == current_user["gender"])
 
-    # Leaves
-    pending_leaves = db.query(LeaveApplication).filter(LeaveApplication.status == "pending").count()
-    approved_leaves = db.query(LeaveApplication).filter(
+    total_students = student_q.count()
+    now_str = datetime.utcnow().isoformat()
+    
+    # Apply same filtering logic to leaves
+    leave_q = db.query(LeaveApplication).join(Student, LeaveApplication.student_id == Student.id)
+    if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
+        leave_q = leave_q.filter(Student.institution_id == current_user["institution_id"])
+    if role == "WARDEN" and current_user.get("gender"):
+        leave_q = leave_q.filter(Student.gender == current_user["gender"])
+
+    pending_leaves = leave_q.filter(LeaveApplication.status == "pending").count()
+    approved_leaves = leave_q.filter(
         LeaveApplication.status == "approved",
         LeaveApplication.from_dt <= now_str,
         LeaveApplication.to_dt >= now_str
     ).count()
 
     # Students outside
-    students = db.query(Student).filter(Student.active == 1).all()
+    students = student_q.all()
     outside_cnt = 0
     for s in students:
-        last_log = db.query(EntryExitLog).filter(
-            EntryExitLog.student_id == s.id
-        ).order_by(EntryExitLog.id.desc()).first()
+        last_log = db.query(EntryExitLog).filter(EntryExitLog.student_id == s.id).order_by(EntryExitLog.id.desc()).first()
         if last_log and last_log.direction == "OUT":
             outside_cnt += 1
 
-    total_rooms = db.query(Room).count()
-    occupied_students = db.query(Student).filter(Student.active == 1, Student.room_id.isnot(None)).count()
+    total_rooms = room_q.count()
+    occupied_students = student_q.filter(Student.room_id.isnot(None)).count()
     occ_pct = round((occupied_students / (total_rooms * 4 or 1)) * 100, 1)
 
-    open_complaints = db.query(Complaint).filter(Complaint.status.in_(["open", "in_progress"])).count()
+    # Complaints
+    comp_q = db.query(Complaint).join(Student, Complaint.student_id == Student.id)
+    if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
+        comp_q = comp_q.filter(Student.institution_id == current_user["institution_id"])
+    if role == "WARDEN" and current_user.get("gender"):
+        comp_q = comp_q.filter(Student.gender == current_user["gender"])
+        
+    open_complaints = comp_q.filter(Complaint.status.in_(["open", "in_progress"])).count()
+    
     expiring_items = db.query(MessItem).filter(MessItem.current_stock <= MessItem.reorder_level).count()
 
     # Leave trends (30 days)
     days_list = [(datetime.utcnow() - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(29, -1, -1)]
     leave_trend = []
     for dt in days_list:
-        cnt = db.query(LeaveApplication).filter(
-            LeaveApplication.created_at.like(f"{dt}%")
-        ).count()
+        cnt = leave_q.filter(LeaveApplication.created_at.like(f"{dt}%")).count()
         leave_trend.append({"date": dt, "count": cnt})
 
     # Complaints breakdown by category
-    complaint_cats = db.query(
-        Complaint.category,
-        func.count(Complaint.id).label("count")
-    ).group_by(Complaint.category).all()
+    complaint_cats = db.query(Complaint.category, func.count(Complaint.id).label("count"))\
+        .join(Student, Complaint.student_id == Student.id)
+    if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
+        complaint_cats = complaint_cats.filter(Student.institution_id == current_user["institution_id"])
+    if role == "WARDEN" and current_user.get("gender"):
+        complaint_cats = complaint_cats.filter(Student.gender == current_user["gender"])
+        
+    complaint_cats = complaint_cats.group_by(Complaint.category).all()
     complaints_by_cat = [{"category": c[0], "count": c[1]} for c in complaint_cats]
 
     # Students by institution

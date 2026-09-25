@@ -132,9 +132,17 @@ def get_complaints(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    query = db.query(Complaint)
-    if current_user["role"] == "STUDENT":
+    query = db.query(Complaint).join(Student, Complaint.student_id == Student.id)
+    role = current_user["role"]
+    
+    if role == "STUDENT":
         query = query.filter(Complaint.student_id == current_user["id"])
+    else:
+        if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
+            query = query.filter(Student.institution_id == current_user["institution_id"])
+        if role == "WARDEN" and current_user.get("gender"):
+            query = query.filter(Student.gender == current_user["gender"])
+            
     return query.order_by(Complaint.id.desc()).all()
 
 @router.get("/api/complaints/stats")
@@ -142,8 +150,16 @@ def get_complaints_stats(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    open_count = db.query(Complaint).filter(Complaint.status == "open").count()
-    resolved_count = db.query(Complaint).filter(Complaint.status == "resolved").count()
+    query = db.query(Complaint).join(Student, Complaint.student_id == Student.id)
+    role = current_user["role"]
+    
+    if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
+        query = query.filter(Student.institution_id == current_user["institution_id"])
+    if role == "WARDEN" and current_user.get("gender"):
+        query = query.filter(Student.gender == current_user["gender"])
+
+    open_count = query.filter(Complaint.status == "open").count()
+    resolved_count = query.filter(Complaint.status == "resolved").count()
     return {"open": open_count, "resolved": resolved_count}
 
 @router.post("/api/complaints")

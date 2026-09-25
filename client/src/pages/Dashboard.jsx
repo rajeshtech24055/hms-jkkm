@@ -66,10 +66,10 @@ export default function Dashboard({ onNavigate }) {
             <div className="stat-label">Students Outside Now</div>
           </div>
 
-          <div className="stat-card rose" onClick={() => onNavigate(['TUTOR', 'HOD'].includes(user?.role) ? 'complaints' : 'mess')} style={{ cursor: 'pointer' }}>
-            <div className="stat-icon">{['TUTOR', 'HOD'].includes(user?.role) ? '📝' : '⚠️'}</div>
-            <div className="stat-value">{['TUTOR', 'HOD'].includes(user?.role) ? stats.openComplaints : stats.expiringItems}</div>
-            <div className="stat-label">{['TUTOR', 'HOD'].includes(user?.role) ? 'Open Complaints' : 'Expiring Groceries (7d)'}</div>
+          <div className="stat-card rose" onClick={() => onNavigate(['WARDEN', 'TUTOR', 'HOD'].includes(user?.role) ? 'complaints' : 'mess')} style={{ cursor: 'pointer' }}>
+            <div className="stat-icon">{['WARDEN', 'TUTOR', 'HOD'].includes(user?.role) ? '📝' : '⚠️'}</div>
+            <div className="stat-value">{['WARDEN', 'TUTOR', 'HOD'].includes(user?.role) ? stats.openComplaints : stats.expiringItems}</div>
+            <div className="stat-label">{['WARDEN', 'TUTOR', 'HOD'].includes(user?.role) ? 'Open Complaints' : 'Expiring Groceries (7d)'}</div>
           </div>
         </>) : (
           <div className="loading" style={{ gridColumn: '1/-1' }}><div className="spinner" /></div>
@@ -87,7 +87,7 @@ export default function Dashboard({ onNavigate }) {
             </div>
           )}
 
-          {aiMeals && (
+          {aiMeals && ['SUPER_ADMIN', 'FOOD_ADMIN', 'HOSTEL_ADMIN', 'PRINCIPAL'].includes(user?.role) && (
             <div className="card" style={{ borderLeft: '4px solid #10b981', background: 'rgba(16,185,129,0.05)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: 0.5 }}>🍽️ Meal Demand Prediction</div>
               <div style={{ fontSize: 13, fontWeight: 700, margin: '8px 0 4px', display: 'flex', gap: 12 }}>
@@ -100,7 +100,7 @@ export default function Dashboard({ onNavigate }) {
             </div>
           )}
 
-          {anomalies && (
+          {anomalies && ['SUPER_ADMIN', 'HOSTEL_ADMIN', 'PRINCIPAL'].includes(user?.role) && (
             <div className="card" style={{ borderLeft: `4px solid ${anomalies.anomaly_count > 0 ? 'var(--danger)' : '#10b981'}`, background: anomalies.anomaly_count > 0 ? 'rgba(239,68,68,0.05)' : 'rgba(16,185,129,0.05)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: anomalies.anomaly_count > 0 ? 'var(--danger)' : '#10b981', textTransform: 'uppercase', letterSpacing: 0.5 }}>📊 Anomaly Detection (Z-Score)</div>
               <div style={{ fontSize: 24, fontWeight: 800, margin: '6px 0 2px' }}>{anomalies.anomaly_count} <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>active anomalies</span></div>
