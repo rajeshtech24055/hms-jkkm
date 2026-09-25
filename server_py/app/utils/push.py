@@ -47,3 +47,15 @@ def send_push_notification(token: str, title: str, body: str, data: dict = None)
     except Exception as e:
         logger.error(f"Error sending push notification: {e}")
         return False
+
+def notify_user(db, user_id: str, title: str, body: str, data: dict = None):
+    from app.models.models import DeviceToken
+    tokens = db.query(DeviceToken).filter(DeviceToken.user_id == str(user_id)).all()
+    for t in tokens:
+        send_push_notification(t.token, title, body, data)
+
+def notify_role(db, role: str, title: str, body: str, data: dict = None):
+    from app.models.models import DeviceToken, User
+    tokens = db.query(DeviceToken).join(User, DeviceToken.user_id == User.id.__str__()).filter(User.role == role).all()
+    for t in tokens:
+        send_push_notification(t.token, title, body, data)

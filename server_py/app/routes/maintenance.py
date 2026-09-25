@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.dependencies import get_current_user, require_roles
 from app.models.models import MaintenanceRequest, Complaint, User, Student
+from app.utils.push import notify_role, notify_user
 
 router = APIRouter(tags=["Maintenance & Complaints"])
 
@@ -61,6 +62,10 @@ def create_maintenance_request(
     )
     db.add(req)
     db.commit()
+    
+    # Notify Warden
+    notify_role(db, "WARDEN", "New Maintenance Request", f"Room {data.room_no}: {data.category}", {"type": "maintenance"})
+    
     return {"id": req.id, "message": "Maintenance request submitted"}
 
 class MaintenanceUpdate(BaseModel):
@@ -78,10 +83,18 @@ def update_maintenance_request(
     req = db.query(MaintenanceRequest).filter(MaintenanceRequest.id == req_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")
-    if data.status: req.status = data.status
+    
+    if data.status: 
+        req.status = data.status
+        if req.status == "completed": 
+            req.resolved_at = datetime.utcnow().isoformat()
+            notify_user(db, req.raised_by, "Maintenance Completed", f"Your request for {req.category} is completed.", {"type": "maintenance"})
+        elif req.status == "in_progress":
+            notify_user(db, req.raised_by, "Maintenance In Progress", f"Your request for {req.category} is now being worked on.", {"type": "maintenance"})
+
     if data.remarks: req.remarks = data.remarks
     if data.assigned_to: req.assigned_to = data.assigned_to
-    if data.status == "completed": req.resolved_at = datetime.utcnow().isoformat()
+    
     db.commit()
     return {"success": True}
 
@@ -152,6 +165,9 @@ def create_complaint(
     )
     db.add(c)
     db.commit()
+    
+    notify_role(db, "WARDEN", "New Complaint Filed", f"Category: {data.category} - {data.subject}", {"type": "complaint"})
+    
     return {"id": c.id, "message": "Complaint submitted successfully"}
 
 class ComplaintUpdate(BaseModel):
@@ -170,10 +186,15 @@ def update_complaint(
     if not c:
         raise HTTPException(status_code=404, detail="Complaint not found")
     
-    if data.status: c.status = data.status
+    if data.status: 
+        c.status = data.status
+        if data.status == "resolved":
+            c.resolved_at = datetime.utcnow().isoformat()
+            notify_user(db, c.student_id, "Complaint Resolved", f"Your complaint '{c.subject}' has been resolved.", {"type": "complaint"})
+    
     if data.admin_remarks: c.admin_remarks = data.admin_remarks
     if data.priority: c.priority = data.priority
-    if data.status == "resolved": c.resolved_at = datetime.utcnow().isoformat()
+    
     db.commit()
     return {"success": True, "message": "Complaint updated"}
 
