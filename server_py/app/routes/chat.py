@@ -166,13 +166,15 @@ def send_chat_message(
                 if hasattr(part, 'function_call') and part.function_call:
                     fc = part.function_call
                     tool_result = execute_tool(fc, db, student_id)
-                    # Send tool result back to model
-                    response = chat.send_message(
-                        genai.types.Part.from_function_response(
+                    # Send tool result back to model using protos (compatible with older sdk versions)
+                    from google.ai.generativelanguage import Content, Part, FunctionResponse
+                    fn_response_part = Part(
+                        function_response=FunctionResponse(
                             name=fc.name,
                             response={"result": tool_result}
                         )
                     )
+                    response = chat.send_message(Content(parts=[fn_response_part], role="user"))
 
         final_text = response.text
 
@@ -184,7 +186,7 @@ def send_chat_message(
 
     except Exception as e:
         print("Chatbot Error:", e)
-        err_msg = f"Sorry, I am having trouble connecting to my brain right now. DEBUG: {str(e)}"
+        err_msg = "Sorry, I am having trouble connecting to my brain right now. Please try again in a moment."
         db.add(StudentChatMessage(student_id=student_id, role="model", content=err_msg))
         db.commit()
         return {"role": "model", "content": err_msg}
