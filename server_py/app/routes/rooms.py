@@ -56,7 +56,7 @@ def get_rooms(
         
     if current_user["role"] not in ["SUPER_ADMIN", "HOSTEL_ADMIN"]:
         if current_user.get("institution_id"):
-            query = query.filter((Room.institution_id == current_user["institution_id"]) | (Room.institution_id == None))
+            query = query.filter(Room.institution_id == current_user["institution_id"])
         if current_user.get("gender") and current_user["role"] == "WARDEN":
             query = query.filter(Room.gender == current_user["gender"])
 

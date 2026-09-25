@@ -28,12 +28,26 @@ def get_hostels(
     hostels = query.all()
     output = []
     for h in hostels:
-        rooms = db.query(Room).filter(Room.hostel_id == h.id).all()
+        room_q = db.query(Room).filter(Room.hostel_id == h.id)
+        if current_user["role"] not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
+            room_q = room_q.filter(Room.institution_id == current_user["institution_id"])
+            
+        rooms = room_q.all()
         total_beds = sum(r.capacity for r in rooms)
-        occupied = db.query(func.count(Student.id)).filter(
-            Student.room_id.in_([r.id for r in rooms]),
-            Student.active == 1
-        ).scalar() or 0
+        
+        occupied = 0
+        if rooms:
+            student_q = db.query(func.count(Student.id)).filter(
+                Student.room_id.in_([r.id for r in rooms]),
+                Student.active == 1
+            )
+            # Wardens only see occupied count for their institution 
+            # (though rooms are already filtered by institution, this is a safety net)
+            if current_user["role"] not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
+                student_q = student_q.filter(Student.institution_id == current_user["institution_id"])
+                
+            occupied = student_q.scalar() or 0
+            
         output.append({
             "id": h.id,
             "name": h.name,
@@ -43,7 +57,6 @@ def get_hostels(
             "total_beds": total_beds,
             "occupied": occupied,
             "available": total_beds - occupied,
-            # Distinct blocks in this hostel
             "blocks": sorted(list(set(r.block for r in rooms if r.block))),
         })
     return output
