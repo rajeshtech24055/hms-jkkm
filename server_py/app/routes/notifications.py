@@ -11,15 +11,28 @@ def get_notifications(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Dummy notifications for now
+    from app.models.models import User, NotificationLog
+    user_id = current_user.get("id")
+    role = current_user.get("role")
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    query = db.query(NotificationLog).order_by(NotificationLog.id.desc()).limit(20)
+    
+    if user and user.phone:
+        # If user has a phone number, fetch their specific notifications
+        # For admins or wardens, we can also fetch general ones, but for now exact match:
+        logs = query.filter(NotificationLog.recipient_phone == user.phone).all()
+    else:
+        logs = []
+        
     return [
         {
-            "id": 1, 
-            "title": "Welcome to HMS", 
-            "message": "Hostel Management System is now live", 
-            "read": False, 
-            "time": "Just now"
-        }
+            "id": log.id,
+            "title": log.type or "Alert",
+            "message": log.message,
+            "read": log.status == "READ",
+            "time": log.sent_at
+        } for log in logs
     ]
     
 @router.post("/{notif_id}/read")
@@ -28,4 +41,9 @@ def mark_read(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    from app.models.models import NotificationLog
+    log = db.query(NotificationLog).filter(NotificationLog.id == notif_id).first()
+    if log:
+        log.status = "READ"
+        db.commit()
     return {"success": True}
