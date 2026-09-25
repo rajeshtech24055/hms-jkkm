@@ -184,7 +184,7 @@ def send_chat_message(
 
     except Exception as e:
         print("Chatbot Error:", e)
-        err_msg = "Sorry, I am having trouble connecting to my brain right now."
+        err_msg = f"Sorry, I am having trouble connecting to my brain right now. DEBUG: {str(e)}"
         db.add(StudentChatMessage(student_id=student_id, role="model", content=err_msg))
         db.commit()
         return {"role": "model", "content": err_msg}
