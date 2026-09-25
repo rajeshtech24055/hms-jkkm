@@ -209,7 +209,7 @@ export default function Dashboard({ onNavigate }) {
           <div className="card-title">⚡ Quick Actions</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
             {[
-              ...(['GATE_STAFF', 'SUPER_ADMIN', 'HOSTEL_ADMIN', 'WARDEN'].includes(user?.role) ? [{ label: '🚪 Open Gate Scanner', page: 'gate', color: '#6366f1' }] : []),
+              ...(['GATE_STAFF', 'SUPER_ADMIN', 'HOSTEL_ADMIN'].includes(user?.role) ? [{ label: '🚪 Open Gate Scanner', page: 'gate', color: '#6366f1' }] : []),
               { label: '📋 View Pending Leaves', page: 'leaves', color: '#f59e0b' },
               ...(!['TUTOR'].includes(user?.role) ? [{ label: '🏠 Room Occupancy', page: 'rooms', color: '#10b981' }] : []),
               { label: '🚶 Students Outside', page: 'outside', color: '#ef4444' },

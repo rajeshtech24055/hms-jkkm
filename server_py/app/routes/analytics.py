@@ -55,13 +55,17 @@ def get_analytics_overview(
     students = student_q.all()
     outside_cnt = 0
     for s in students:
-        last_log = db.query(EntryExitLog).filter(EntryExitLog.student_id == s.id).order_by(EntryExitLog.id.desc()).first()
+        last_log = db.query(EntryExitLog).filter(
+            EntryExitLog.student_id == s.id,
+            EntryExitLog.flagged == 0
+        ).order_by(EntryExitLog.id.desc()).first()
         if last_log and last_log.direction == "OUT":
             outside_cnt += 1
 
     total_rooms = room_q.count()
+    total_capacity = room_q.with_entities(func.sum(Room.capacity)).scalar() or 1
     occupied_students = student_q.filter(Student.room_id.isnot(None)).count()
-    occ_pct = round((occupied_students / (total_rooms * 4 or 1)) * 100, 1)
+    occ_pct = round((occupied_students / total_capacity) * 100, 1)
 
     # Complaints
     comp_q = db.query(Complaint).join(Student, Complaint.student_id == Student.id)

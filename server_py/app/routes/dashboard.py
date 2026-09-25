@@ -49,7 +49,10 @@ def get_dashboard_stats(
 
     outside_cnt = 0
     for s in total_students_q.all():
-        last_log = db.query(EntryExitLog).filter(EntryExitLog.student_id == s.id).order_by(EntryExitLog.id.desc()).first()
+        last_log = db.query(EntryExitLog).filter(
+            EntryExitLog.student_id == s.id,
+            EntryExitLog.flagged == 0
+        ).order_by(EntryExitLog.id.desc()).first()
         if last_log and last_log.direction == "OUT":
             outside_cnt += 1
 
@@ -58,6 +61,7 @@ def get_dashboard_stats(
     active_sos = db.query(SosIncident).filter(SosIncident.status == "OPEN").count()
 
     total_rooms = db.query(Room).filter(*room_filter).count()
+    total_capacity = db.query(func.sum(Room.capacity)).filter(*room_filter).scalar() or 1
     occupied_students = total_students_q.filter(Student.room_id.isnot(None)).count()
 
     return {
@@ -71,6 +75,6 @@ def get_dashboard_stats(
             "active_sos": active_sos,
             "total_rooms": total_rooms,
             "occupied_students": occupied_students,
-            "occupancy_rate_pct": round((occupied_students / (total_rooms * 4 or 1)) * 100, 1)
+            "occupancy_rate_pct": round((occupied_students / total_capacity) * 100, 1)
         }
     }
