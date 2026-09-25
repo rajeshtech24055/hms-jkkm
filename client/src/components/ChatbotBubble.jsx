@@ -10,8 +10,8 @@ export default function ChatbotBubble() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Only show the chatbot for students
-  if (!user || user.role !== 'STUDENT') return null;
+  // Show the chatbot for everyone for testing purposes
+  if (!user) return null;
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
