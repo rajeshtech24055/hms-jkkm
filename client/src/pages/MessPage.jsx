@@ -33,6 +33,7 @@ export default function MessPage() {
   const [predictions, setPredictions] = useState([]);
   const [usageLogs, setUsageLogs] = useState([]);
   const [expiryAlerts, setExpiryAlerts] = useState({ expired: [], expiringSoon: [], lowStock: [] });
+  const [dashStats, setDashStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Modals
@@ -40,6 +41,7 @@ export default function MessPage() {
   const [showEditModal, setShowEditModal]   = useState(false);
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [showUsageModal, setShowUsageModal] = useState(false);
+  const [showWastageModal, setShowWastageModal] = useState(false);
   const [selectedItem, setSelectedItem]     = useState(null);
 
   // Forms
@@ -47,21 +49,24 @@ export default function MessPage() {
   const [restockForm, setRestockForm] = useState({ qty:'', batch_no:'', mfg_date:'', exp_date:'', unit_price:'' });
   const [usageForm, setUsageForm]   = useState({ item_id:'', qty:'' });
 
-  const isFoodAdmin = ['FOOD_ADMIN','SUPER_ADMIN','HOSTEL_ADMIN'].includes(user?.role);
+  const isFoodAdmin = ['FOOD_ADMIN','SUPER_ADMIN','HOSTEL_ADMIN', 'MESS_MANAGER'].includes(user?.role);
+  const isMobileManager = user?.role === 'MESS_MANAGER';
 
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [itemsData, predData, usageData, alertData] = await Promise.all([
+      const [itemsData, predData, usageData, alertData, dashData] = await Promise.all([
         api('/api/mess_inventory'),
         api('/api/mess_inventory/prediction'),
         api('/api/mess_inventory/usage'),
         api('/api/mess_inventory/expiry-alerts'),
+        api('/api/dashboard')
       ]);
       setItems(itemsData);
       setPredictions(predData);
       setUsageLogs(usageData);
       setExpiryAlerts(alertData);
+      setDashStats(dashData.stats);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -180,6 +185,63 @@ export default function MessPage() {
 
   return (
     <div className="page-enter">
+      {isMobileManager ? (
+        <div style={{ padding: '16px', maxWidth: 480, margin: '0 auto', paddingBottom: 100 }}>
+          <h2 style={{ fontSize: 26, marginBottom: 8 }}>👨‍🍳 Kitchen Manager</h2>
+          
+          {/* Headcount Forecast */}
+          <div className="card" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', color: 'white', marginBottom: 24, border: 'none' }}>
+            <div style={{ fontSize: 13, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700, marginBottom: 8 }}>AI Headcount Forecast</div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
+              <span style={{ fontSize: 48, fontWeight: 800, lineHeight: 1 }}>{presentStudents}</span>
+              <span style={{ fontSize: 15, opacity: 0.9, paddingBottom: 6 }}>meals to prepare</span>
+            </div>
+            <p style={{ marginTop: 12, fontSize: 13, opacity: 0.8, borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 12 }}>
+              {dashStats ? `${dashStats.on_leave} on leave · ${dashStats.outside_now} currently outside` : 'Loading data...'}
+            </p>
+          </div>
+
+          {/* Big Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <button className="btn btn-primary" style={{ padding: '24px', fontSize: 20, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 16, boxShadow: '0 8px 16px rgba(99,102,241,0.2)', border: 'none' }} onClick={() => setShowUsageModal(true)}>
+              <span style={{ fontSize: 32 }}>📋</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 700 }}>Log Daily Usage</div>
+                <div style={{ fontSize: 13, fontWeight: 500, opacity: 0.9 }}>Record items used today</div>
+              </div>
+            </button>
+
+            <button className="btn" style={{ padding: '24px', fontSize: 20, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 16, background: 'var(--bg-card)', color: 'var(--text)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }} onClick={() => { setForm(EMPTY_FORM); setShowAddModal(true); }}>
+              <span style={{ fontSize: 32 }}>📦</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 700 }}>Add New Stock</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>Received new delivery</div>
+              </div>
+            </button>
+
+            <button className="btn" style={{ padding: '24px', fontSize: 20, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 16, background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={() => alert('AI Voice Logger coming in the next update!')}>
+              <span style={{ fontSize: 32 }}>🎙️</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 700 }}>Voice Logger (AI)</div>
+                <div style={{ fontSize: 13, fontWeight: 500, opacity: 0.8 }}>Hold to speak entry</div>
+              </div>
+            </button>
+          </div>
+
+          {/* Expiry / Alerts Mini Banner */}
+          {alertCount > 0 && (
+            <div style={{ marginTop: 24, background: 'var(--bg-card)', padding: '16px', borderRadius: 16, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }} onClick={() => { setTab('alerts'); }}>
+              <span style={{ fontSize: 24 }}>🚨</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700 }}>{alertCount} Attention Required</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Items expiring or low stock</div>
+              </div>
+              <button className="btn btn-sm btn-ghost">View</button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: 'contents' }}>
       {/* Header */}
       <div className="section-header">
         <div>
@@ -417,6 +479,8 @@ export default function MessPage() {
             </div>
           )}
         </>
+      )}
+      </div>
       )}
 
       {/* ════ ADD GROCERY MODAL ════ */}

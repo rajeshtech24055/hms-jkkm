@@ -184,6 +184,8 @@ export default function StudentsPage() {
   const [filterGender, setFilterGender] = useState('');
   const [filterActive, setFilterActive] = useState('active');
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [historyData, setHistoryData] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
   const [qrData, setQrData] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
@@ -219,6 +221,19 @@ export default function StudentsPage() {
       const { qr } = await api(`/api/students/${student.id}/qr`);
       setQrData(qr);
     } catch {}
+  };
+
+  const openHistory = async (student) => {
+    setSelectedStudent(student);
+    setHistoryData(null);
+    setShowHistory(true);
+    try {
+      const data = await api(`/api/students/${student.id}/history`);
+      setHistoryData(data);
+    } catch (err) {
+      alert("Failed to load history.");
+      setShowHistory(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -473,6 +488,7 @@ export default function StudentsPage() {
                         <div style={{ display: 'flex', gap: 6 }}>
                           {canManage && <button className="btn btn-sm btn-ghost" onClick={() => openEdit(s)}>✏️ Edit</button>}
                           <button className="btn btn-sm btn-primary" onClick={() => openCard(s)}>🪪 Card</button>
+                          <button className="btn btn-sm btn-ghost" style={{background: 'var(--surface-2)'}} onClick={() => openHistory(s)}>📜 History</button>
                           {!isVacated ? (
                             canManage && <button className="btn btn-sm btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => handleVacate(s)} title="Vacate Student">
                               🚪 Vacate
@@ -712,6 +728,68 @@ export default function StudentsPage() {
                 <button type="button" className="btn btn-ghost" onClick={() => setShowRoomModal(false)}>Cancel</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* HISTORY MODAL */}
+      {showHistory && selectedStudent && (
+        <div className="modal-overlay" onClick={() => setShowHistory(false)}>
+          <div className="modal" style={{ maxWidth: 800 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="modal-title">📜 History — {selectedStudent.name}</span>
+              <button className="modal-close" onClick={() => setShowHistory(false)}>×</button>
+            </div>
+            <div style={{ padding: '20px 24px', maxHeight: '70vh', overflowY: 'auto' }}>
+              {!historyData ? (
+                <div className="loading"><div className="spinner" /></div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                  <div>
+                    <h3 style={{ marginBottom: 12, borderBottom: '1px solid var(--border-color)', paddingBottom: 8 }}>🚪 Gate Scans (Last 50)</h3>
+                    {historyData.gate_logs.length === 0 ? <p className="empty-state">No gate history found.</p> : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {historyData.gate_logs.map(log => (
+                          <div key={log.id} style={{ background: 'var(--surface-2)', padding: '10px 14px', borderRadius: 8, borderLeft: `4px solid ${log.direction === 'OUT' ? 'var(--warning)' : 'var(--success)'}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <strong style={{ color: log.direction === 'OUT' ? 'var(--warning)' : 'var(--success)' }}>
+                                {log.direction === 'OUT' ? '🛫 EXITED' : '🛬 ENTERED'}
+                              </strong>
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                {new Date(log.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                              </span>
+                            </div>
+                            {log.flagged === 1 && (
+                              <div style={{ fontSize: 12, color: 'var(--danger)', background: 'rgba(239, 68, 68, 0.1)', padding: '4px 8px', borderRadius: 4, marginTop: 4 }}>
+                                ⚠️ Flagged: {log.flag_reason}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 style={{ marginBottom: 12, borderBottom: '1px solid var(--border-color)', paddingBottom: 8 }}>📝 Leaves (Last 20)</h3>
+                    {historyData.leaves.length === 0 ? <p className="empty-state">No leave history found.</p> : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {historyData.leaves.map(leave => (
+                          <div key={leave.id} style={{ background: 'var(--surface-2)', padding: '10px 14px', borderRadius: 8 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <strong style={{ fontSize: 14 }}>{leave.type} Leave</strong>
+                              <span className={`badge badge-${leave.status === 'approved' ? 'success' : leave.status === 'rejected' ? 'danger' : 'warning'}`}>{leave.status.toUpperCase()}</span>
+                            </div>
+                            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 4 }}>
+                              {new Date(leave.from_dt).toLocaleDateString('en-IN')} — {new Date(leave.to_dt).toLocaleDateString('en-IN')}
+                            </div>
+                            <div style={{ fontSize: 13 }}>{leave.reason}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

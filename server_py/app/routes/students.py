@@ -12,7 +12,7 @@ from app.database import get_db
 from app.config import settings
 from app.security import create_access_token, decode_token, get_password_hash
 from app.dependencies import get_current_user, require_roles
-from app.models.models import Student, Institution, Department, Room, EntryExitLog, User
+from app.models.models import Student, Institution, Department, Room, EntryExitLog, User, LeaveApplication
 
 router = APIRouter(prefix="/api/students", tags=["Students"])
 
@@ -222,6 +222,46 @@ def get_student(
         "photo_url": student.photo_url,
         "current_status": last_log.direction if last_log else "IN",
         "active": student.active
+    }
+
+@router.get("/{student_id}/history")
+def get_student_history(
+    student_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Fetch gate logs
+    gate_logs = db.query(EntryExitLog).filter(
+        EntryExitLog.student_id == student_id
+    ).order_by(EntryExitLog.id.desc()).limit(50).all()
+
+    # Fetch leaves
+    leaves = db.query(LeaveApplication).filter(
+        LeaveApplication.student_id == student_id
+    ).order_by(LeaveApplication.id.desc()).limit(20).all()
+
+    return {
+        "gate_logs": [
+            {
+                "id": log.id,
+                "direction": log.direction,
+                "created_at": log.created_at,
+                "authorized": log.authorized,
+                "flagged": log.flagged,
+                "flag_reason": log.flag_reason
+            } for log in gate_logs
+        ],
+        "leaves": [
+            {
+                "id": leave.id,
+                "type": leave.type,
+                "status": leave.status,
+                "from_dt": leave.from_dt,
+                "to_dt": leave.to_dt,
+                "reason": leave.reason,
+                "is_emergency": leave.is_emergency
+            } for leave in leaves
+        ]
     }
 
 @router.post("")

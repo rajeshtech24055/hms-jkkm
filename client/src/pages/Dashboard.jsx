@@ -15,13 +15,17 @@ export default function Dashboard({ onNavigate }) {
   const [anomalies, setAnomalies] = useState(null);
 
   useEffect(() => {
-    // Fetch full analytics overview & AI forecasts
-    api('/api/analytics/overview').then(setStats).catch(() => {});
+    // Fetch notices for everyone
     api('/api/notices').then(setNotices).catch(() => {});
-    api('/api/forecast/occupancy').then(setAiOccupancy).catch(() => {});
-    api('/api/forecast/meals').then(setAiMeals).catch(() => {});
-    api('/api/forecast/analytics/anomalies').then(setAnomalies).catch(() => {});
-  }, [api]);
+
+    // Only fetch analytics/forecasts for admins/staff to avoid 401 errors for students/mess managers
+    if (['SUPER_ADMIN', 'HOSTEL_ADMIN', 'WARDEN'].includes(user?.role)) {
+      api('/api/analytics/overview').then(setStats).catch(() => {});
+      api('/api/forecast/occupancy').then(setAiOccupancy).catch(() => {});
+      api('/api/forecast/meals').then(setAiMeals).catch(() => {});
+      api('/api/forecast/analytics/anomalies').then(setAnomalies).catch(() => {});
+    }
+  }, [api, user?.role]);
 
   const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#0ea5e9'];
 

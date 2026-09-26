@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 const AuthContext = createContext(null);
 
@@ -53,46 +54,48 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!user || !token) return;
     
-    // Dynamically import to avoid breaking web builds if Capacitor isn't ready
-    import('@capacitor/push-notifications').then(({ PushNotifications }) => {
-      // Request permission to use push notifications
-      // iOS will prompt user and return if they granted permission or not
-      // Android will just grant without prompting
-      PushNotifications.requestPermissions().then(result => {
-        if (result.receive === 'granted') {
-          // Register with Apple / Google to receive push via APNS/FCM
-          PushNotifications.register();
-        } else {
-          console.log('Push notification permission denied');
-        }
-      });
+    if (Capacitor.isNativePlatform()) {
+      // Dynamically import to avoid breaking web builds if Capacitor isn't ready
+      import('@capacitor/push-notifications').then(({ PushNotifications }) => {
+        // Request permission to use push notifications
+        // iOS will prompt user and return if they granted permission or not
+        // Android will just grant without prompting
+        PushNotifications.requestPermissions().then(result => {
+          if (result.receive === 'granted') {
+            // Register with Apple / Google to receive push via APNS/FCM
+            PushNotifications.register();
+          } else {
+            console.log('Push notification permission denied');
+          }
+        });
 
-      // On success, we should be able to receive notifications
-      PushNotifications.addListener('registration', (token) => {
-        // Send this token to our backend
-        fetch('https://hms-jkkm-api.onrender.com/api/auth/register-device-token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('hms_token')}`
-          },
-          body: JSON.stringify({ token: token.value })
-        }).catch(err => console.error('Failed to register FCM token:', err));
-      });
+        // On success, we should be able to receive notifications
+        PushNotifications.addListener('registration', (token) => {
+          // Send this token to our backend
+          fetch('https://hms-jkkm-api.onrender.com/api/auth/register-device-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('hms_token')}`
+            },
+            body: JSON.stringify({ token: token.value })
+          }).catch(err => console.error('Failed to register FCM token:', err));
+        });
 
-      // Some issue with our setup and push will not work
-      PushNotifications.addListener('registrationError', (error) => {
-        console.error('Error on registration: ' + JSON.stringify(error));
-      });
+        // Some issue with our setup and push will not work
+        PushNotifications.addListener('registrationError', (error) => {
+          console.error('Error on registration: ' + JSON.stringify(error));
+        });
 
-      // Show us the notification payload if the app is open on our device
-      PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        console.log('Push received: ' + JSON.stringify(notification));
-        // You could trigger a local React toast/alert here too if needed
+        // Show us the notification payload if the app is open on our device
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          console.log('Push received: ' + JSON.stringify(notification));
+          // You could trigger a local React toast/alert here too if needed
+        });
+      }).catch(() => {
+        // Ignored - probably running in standard web browser where PushNotifications is not available
       });
-    }).catch(() => {
-      // Ignored - probably running in standard web browser where PushNotifications is not available
-    });
+    }
   }, [user, token]);
 
   const logout = useCallback(() => {
