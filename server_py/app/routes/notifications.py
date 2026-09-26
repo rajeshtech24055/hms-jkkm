@@ -16,10 +16,10 @@ def get_notifications(
     role = current_user.get("role")
     user = db.query(User).filter(User.id == user_id).first()
     
-    query = db.query(NotificationLog).order_by(NotificationLog.id.desc()).limit(20)
-    
+    query = db.query(NotificationLog)
     if user_id:
-        logs = query.filter(NotificationLog.user_id == user_id).all()
+        query = query.filter(NotificationLog.user_id == user_id)
+        logs = query.order_by(NotificationLog.id.desc()).limit(20).all()
     else:
         logs = []
         
