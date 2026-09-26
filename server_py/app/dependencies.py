@@ -21,7 +21,7 @@ def get_current_user(
         )
     
     user_id = payload.get("id")
-    role = payload.get("role")
+    role = payload.get("role", "").upper()
     
     if role == "STUDENT":
         student = db.query(Student).filter(Student.id == user_id).first()

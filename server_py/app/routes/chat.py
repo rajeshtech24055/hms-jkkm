@@ -73,7 +73,7 @@ def get_chat_history(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user["role"] != "STUDENT":
+    if current_user["role"].upper() != "STUDENT":
         raise HTTPException(status_code=403, detail="Only students can access this chatbot.")
         
     messages = db.query(StudentChatMessage).filter(
@@ -88,7 +88,7 @@ def send_chat_message(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user["role"] != "STUDENT":
+    if current_user["role"].upper() != "STUDENT":
         raise HTTPException(status_code=403, detail="Only students can access this chatbot.")
         
     if not api_key:
