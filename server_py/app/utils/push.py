@@ -95,6 +95,8 @@ def notify_role(db, role: str, title: str, body: str, data: dict = None):
     db.commit()
     
     # Send Push
-    tokens = db.query(DeviceToken).join(User, DeviceToken.user_id == cast(User.id, String)).filter(User.role == role).all()
-    for t in tokens:
-        send_push_notification(t.token, title, body, data)
+    user_ids = [str(u.id) for u in users]
+    if user_ids:
+        tokens = db.query(DeviceToken).filter(DeviceToken.user_id.in_(user_ids)).all()
+        for t in tokens:
+            send_push_notification(t.token, title, body, data)
