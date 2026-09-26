@@ -106,6 +106,9 @@ def _run_migrations():
             # 7. Notification Log Fields
             if 'notification_logs' in existing_tables:
                 notif_cols = [c['name'] for c in inspector.get_columns('notification_logs')]
+                if 'user_id' not in notif_cols:
+                    try: conn.execute(text("ALTER TABLE notification_logs ADD COLUMN user_id INTEGER;"))
+                    except Exception: pass
                 if 'status' not in notif_cols:
                     try: conn.execute(text("ALTER TABLE notification_logs ADD COLUMN status VARCHAR DEFAULT 'SENT';"))
                     except Exception: pass
