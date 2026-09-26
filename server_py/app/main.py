@@ -103,6 +103,16 @@ def _run_migrations():
                     try: conn.execute(text("ALTER TABLE maintenance_requests ADD COLUMN last_escalated_at VARCHAR;"))
                     except Exception: pass
 
+            # 7. Notification Log Fields
+            if 'notification_logs' in existing_tables:
+                notif_cols = [c['name'] for c in inspector.get_columns('notification_logs')]
+                if 'status' not in notif_cols:
+                    try: conn.execute(text("ALTER TABLE notification_logs ADD COLUMN status VARCHAR DEFAULT 'SENT';"))
+                    except Exception: pass
+                if 'sent_at' not in notif_cols:
+                    try: conn.execute(text("ALTER TABLE notification_logs ADD COLUMN sent_at VARCHAR;"))
+                    except Exception: pass
+
         print("[MIGRATION] Database migration completed successfully")
     except Exception as e:
         print(f"[MIGRATION] Warning: {e}")
