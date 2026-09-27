@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.database import get_db
@@ -10,6 +10,7 @@ from app.models.models import (
     Institution, Department, NotificationLog, EntryExitLog
 )
 from app.utils.push import notify_role, notify_user
+from app.socket import sio
 
 router = APIRouter(prefix="/api/leaves", tags=["Leaves"])
 
@@ -34,8 +35,8 @@ def _get_approver_phone(db: Session, role: str, student: Student) -> str:
     user = query.first()
     return user.phone if (user and user.phone) else "N/A"
 
-def _notify_parent(db: Session, student: Student, notif_type: str, message: str):
-    """Create a NotificationLog entry for the parent/guardian."""
+def _notify_parent(db: Session, student: Student, notif_type: str, message: str, background_tasks: BackgroundTasks = None):
+    """Create a NotificationLog entry for the parent/guardian and simulate SMS."""
     guardian_phone = student.guardian_phone or student.mobile
     if not guardian_phone:
         return
@@ -48,6 +49,9 @@ def _notify_parent(db: Session, student: Student, notif_type: str, message: str)
         status="SENT",
         sent_at=datetime.utcnow().isoformat()
     ))
+    if background_tasks:
+        # Simulate SMS to parent in real-time on UI
+        background_tasks.add_task(sio.emit, "notification", f"📱 SMS to {guardian_phone}: {message[:60]}...")
 
 
 class LeaveCreate(BaseModel):
@@ -137,6 +141,7 @@ def get_leaves(
 @router.post("")
 def apply_leave(
     data: LeaveCreate,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -183,7 +188,7 @@ def apply_leave(
         f"This request is now pending Warden approval.\n"
         f"📞 If you have any objection, please call the Warden: {warden_phone}"
     )
-    _notify_parent(db, student, "LEAVE_SUBMITTED", msg)
+    _notify_parent(db, student, "LEAVE_SUBMITTED", msg, background_tasks)
 
     # Alert warden for emergency
     if data.is_emergency:
@@ -206,6 +211,7 @@ def apply_leave(
 def approve_leave(
     leave_id: int,
     data: ApprovalDecision,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -247,7 +253,7 @@ def approve_leave(
                 f"  ❌ Reason: {data.reason or 'Not specified'}\n\n"
                 f"📞 To discuss, contact the {approver_label}: {approver_phone}"
             )
-            _notify_parent(db, student, "LEAVE_REJECTED", msg)
+            _notify_parent(db, student, "LEAVE_REJECTED", msg, background_tasks)
         
         # Push notification to student
         notify_user(db, leave.student_id, "Leave Rejected", f"Your leave was rejected by {approver_name}.", {"type": "leave"})
@@ -272,7 +278,7 @@ def approve_leave(
                     f"  📞 HOD      : {_get_approver_phone(db, 'HOD', student)}\n"
                     f"  📞 Principal: {_get_approver_phone(db, 'PRINCIPAL', student)}"
                 )
-                _notify_parent(db, student, "LEAVE_APPROVED", msg)
+                _notify_parent(db, student, "LEAVE_APPROVED", msg, background_tasks)
             
             # Push notification to student
             notify_user(db, leave.student_id, "Leave Fully Approved", f"Your leave has been fully approved.", {"type": "leave"})
@@ -298,7 +304,7 @@ def approve_leave(
                     f"  📞 {next_label} (next approver): {next_phone}\n"
                     f"  📞 {approver_label} (approved this level): {approver_phone}"
                 )
-                _notify_parent(db, student, "LEAVE_FORWARDED", msg)
+                _notify_parent(db, student, "LEAVE_FORWARDED", msg, background_tasks)
 
     db.commit()
     return {"success": True, "status": leave.status}
@@ -307,6 +313,7 @@ def approve_leave(
 @router.post("/bulk-approve")
 def bulk_approve(
     data: dict,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -319,6 +326,7 @@ def bulk_approve(
             approve_leave(
                 leave_id=leave_id,
                 data=ApprovalDecision(decision=decision, reason=reason),
+                background_tasks=background_tasks,
                 current_user=current_user,
                 db=db
             )
@@ -332,6 +340,7 @@ def bulk_approve(
 @router.post("/{leave_id}/cancel")
 def cancel_leave(
     leave_id: int,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -352,7 +361,7 @@ def cancel_leave(
             f"has been CANCELLED.\n"
             f"Your ward will continue to stay in the hostel."
         )
-        _notify_parent(db, student, "LEAVE_CANCELLED", msg)
+        _notify_parent(db, student, "LEAVE_CANCELLED", msg, background_tasks)
 
     db.commit()
     return {"success": True, "message": "Leave cancelled. Parent notified."}

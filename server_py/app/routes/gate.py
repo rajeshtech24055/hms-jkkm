@@ -180,6 +180,7 @@ def scan_gate(
             status="SENT",
             sent_at=now_str
         ))
+        background_tasks.add_task(sio.emit, "notification", f"📱 SMS to {parent_phone}: {msg}")
         notification_sent = {"recipient": parent_phone, "message": msg}
     elif direction == "IN":
         used_leave = db.query(LeaveApplication).filter(
@@ -188,6 +189,20 @@ def scan_gate(
         ).order_by(LeaveApplication.id.desc()).first()
         if used_leave:
             used_leave.status = "completed"
+        
+        parent_phone = student.guardian_phone or student.mobile or "9876501000"
+        msg = f"INFO: Your ward {student.name} ({student.reg_no}) safely checked IN to JKKM Hostel."
+        db.add(NotificationLog(
+            recipient_phone=parent_phone,
+            student_id=student.id,
+            student_name=student.name,
+            type="GATE_IN",
+            message=msg,
+            status="SENT",
+            sent_at=now_str
+        ))
+        background_tasks.add_task(sio.emit, "notification", f"📱 SMS to {parent_phone}: {msg}")
+        notification_sent = {"recipient": parent_phone, "message": msg}
 
     db.commit()
     

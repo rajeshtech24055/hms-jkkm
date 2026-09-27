@@ -249,12 +249,36 @@ export default function MessPage() {
           <p style={{ color:'var(--text-muted)', fontSize:14, fontWeight: 500 }}>Common Kitchen · {presentStudents} students to feed today</p>
         </div>
         {isFoodAdmin && (
-          <div style={{ display:'flex', gap:12 }}>
+          <div className="hide-mobile" style={{ display:'flex', gap:12 }}>
             <button className="btn btn-ghost" style={{ background: 'var(--bg-card)' }} onClick={() => setShowUsageModal(true)}>📋 Log Usage</button>
             <button className="btn btn-primary" onClick={() => { setForm(EMPTY_FORM); setShowAddModal(true); }}>➕ Add Mess Item</button>
           </div>
         )}
       </div>
+
+      {/* Mobile Floating Action Button */}
+      {isFoodAdmin && (
+        <button 
+          className="btn btn-primary show-mobile" 
+          style={{ 
+            position: 'fixed', 
+            bottom: 80, 
+            right: 20, 
+            width: 56, 
+            height: 56, 
+            borderRadius: 28, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            boxShadow: '0 8px 24px rgba(37,99,235,0.4)',
+            zIndex: 100,
+            padding: 0
+          }}
+          onClick={() => { setForm(EMPTY_FORM); setShowAddModal(true); }}
+        >
+          <span style={{ fontSize: 24 }}>➕</span>
+        </button>
+      )}
 
       {/* Expiry Banner */}
       {alertCount > 0 && (
