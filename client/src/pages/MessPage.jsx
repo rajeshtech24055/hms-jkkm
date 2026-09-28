@@ -6,7 +6,7 @@ const UNITS = ['kg', 'g', 'litre', 'ml', 'dozen', 'piece', 'packet', 'box', 'bot
 
 const EMPTY_FORM = {
   name: '', category: 'Grains', unit: 'kg',
-  current_stock: '', reorder_level: '',
+  current_stock: '', reorder_level: '', reorder_qty: '',
   supplier: '', unit_price: '', batch_no: '',
   mfg_date: '', exp_date: '',
   is_perishable: false   // toggle to show/hide date fields
@@ -77,7 +77,14 @@ export default function MessPage() {
   const handleAdd = async (e) => {
     e.preventDefault();
     try {
-      await api('/api/mess_inventory', { method:'POST', body: JSON.stringify(form) });
+      const payload = {
+        ...form,
+        current_stock: parseFloat(form.current_stock) || 0,
+        reorder_level: parseFloat(form.reorder_level) || 0,
+        reorder_qty: parseFloat(form.reorder_qty) || 0,
+        unit_price: parseFloat(form.unit_price) || 0,
+      };
+      await api('/api/mess_inventory', { method:'POST', body: JSON.stringify(payload) });
       setShowAddModal(false);
       setForm(EMPTY_FORM);
       fetchAll();
@@ -93,7 +100,14 @@ export default function MessPage() {
   const handleEdit = async (e) => {
     e.preventDefault();
     try {
-      await api(`/api/mess_inventory/${selectedItem.id}`, { method:'PUT', body: JSON.stringify(form) });
+      const payload = {
+        ...form,
+        current_stock: parseFloat(form.current_stock) || 0,
+        reorder_level: parseFloat(form.reorder_level) || 0,
+        reorder_qty: parseFloat(form.reorder_qty) || 0,
+        unit_price: parseFloat(form.unit_price) || 0,
+      };
+      await api(`/api/mess_inventory/${selectedItem.id}`, { method:'PUT', body: JSON.stringify(payload) });
       setShowEditModal(false);
       fetchAll();
     } catch (err) { alert('Error: ' + err.message); }

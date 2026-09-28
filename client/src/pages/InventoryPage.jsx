@@ -143,7 +143,7 @@ export default function InventoryPage() {
   const fetchPOs = useCallback(async () => {
     try {
       const q = poStatusFilter ? `?status=${poStatusFilter}` : '';
-      const data = await api('/api/purchase-orders' + q);
+      const data = await api('/api/materials_tools/purchase-orders' + q);
       setPos(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error('fetchPOs error:', e);
@@ -237,7 +237,7 @@ export default function InventoryPage() {
     if (!poForm.item_name || !poForm.requested_qty) return alert('Item name and quantity required');
     setSaving(true);
     try {
-      const r = await api('/api/purchase-orders', { method:'POST', body:JSON.stringify(poForm) });
+      const r = await api('/api/materials_tools/purchase-orders', { method:'POST', body:JSON.stringify(poForm) });
       alert(`PO Created: ${r.po_number}`);
       setShowPOForm(false); setPoForm(EMPTY_PO); fetchPOs();
     } catch(e) { alert('Error: ' + e.message); }
@@ -246,7 +246,7 @@ export default function InventoryPage() {
 
   const handlePOAction = async (po, status, extra = {}) => {
     try {
-      await api(`/api/purchase-orders/${po.id}`, { method:'PUT', body:JSON.stringify({ status, ...extra }) });
+      await api(`/api/materials_tools/purchase-orders/${po.id}`, { method:'PUT', body:JSON.stringify({ status, ...extra }) });
       fetchPOs(); refreshAll();
     } catch(e) { alert('Error: ' + e.message); }
   };
@@ -259,7 +259,7 @@ export default function InventoryPage() {
     reader.onload = async (ev) => {
       const base64 = ev.target.result;
       try {
-        await api(`/api/purchase-orders/${po.id}`, { method:'PUT', body:JSON.stringify({ bill_image: base64 }) });
+        await api(`/api/materials_tools/purchase-orders/${po.id}`, { method:'PUT', body:JSON.stringify({ bill_image: base64 }) });
         alert('Bill uploaded successfully');
         fetchPOs(); refreshAll();
       } catch(err) { alert('Upload failed: ' + err.message); }
@@ -270,7 +270,7 @@ export default function InventoryPage() {
   const handleReceive = async () => {
     if (!receiveQty || isNaN(receiveQty) || +receiveQty <= 0) return alert('Enter valid quantity');
     try {
-      await api(`/api/purchase-orders/${receiveModal.id}`, { method:'PUT', body:JSON.stringify({ status:'Received', received_qty: +receiveQty }) });
+      await api(`/api/materials_tools/purchase-orders/${receiveModal.id}`, { method:'PUT', body:JSON.stringify({ status:'Received', received_qty: +receiveQty }) });
       setReceiveModal(null); setReceiveQty(''); fetchPOs(); refreshAll();
     } catch(e) { alert('Error: ' + e.message); }
   };
