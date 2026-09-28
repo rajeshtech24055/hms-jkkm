@@ -65,3 +65,26 @@ def require_roles(*allowed_roles: str):
             )
         return current_user
     return role_checker
+
+def apply_role_filters(query, current_user, StudentModel):
+    role = current_user["role"]
+    
+    # Super Admin / Hostel Admin see everything
+    if role in ["SUPER_ADMIN", "HOSTEL_ADMIN"]:
+        return query
+
+    # Institution isolation for all other staff
+    if current_user.get("institution_id"):
+        query = query.filter(StudentModel.institution_id == current_user["institution_id"])
+
+    # Role specific narrowing
+    if role == "WARDEN" and current_user.get("gender"):
+        query = query.filter(StudentModel.gender == current_user["gender"])
+    elif role == "HOD" and current_user.get("dept_id"):
+        query = query.filter(StudentModel.dept_id == current_user["dept_id"])
+    elif role == "TUTOR" and current_user.get("dept_id"):
+        query = query.filter(StudentModel.dept_id == current_user["dept_id"])
+        if current_user.get("year"):
+            query = query.filter(StudentModel.year == current_user["year"])
+            
+    return query

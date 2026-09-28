@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.database import get_db
 from app.security import decode_token
-from app.dependencies import get_current_user, require_roles
+from app.dependencies import get_current_user, require_roles, apply_role_filters
 from app.models.models import Student, EntryExitLog, LeaveApplication, NotificationLog, Institution, Department
 from app.socket import sio
 from app.utils.push import notify_user
@@ -33,18 +33,7 @@ def get_gate_logs(
      .outerjoin(Institution, Student.institution_id == Institution.id)\
      .outerjoin(Department, Student.dept_id == Department.id)
      
-    role = current_user["role"]
-    if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN", "GATE_STAFF"] and current_user.get("institution_id"):
-        query = query.filter(Student.institution_id == current_user["institution_id"])
-        
-    if role == "WARDEN" and current_user.get("gender"):
-        query = query.filter(Student.gender == current_user["gender"])
-    elif role == "TUTOR" and current_user.get("dept_id"):
-        query = query.filter(Student.dept_id == current_user["dept_id"])
-        if current_user.get("year"):
-            query = query.filter(Student.year == current_user["year"])
-    elif role == "HOD" and current_user.get("dept_id"):
-        query = query.filter(Student.dept_id == current_user["dept_id"])
+    query = apply_role_filters(query, current_user, Student)
 
     logs = query.order_by(EntryExitLog.id.desc()).limit(100).all()
 
@@ -243,22 +232,52 @@ def get_outside_students(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Find students whose latest log is OUT
-    students = db.query(Student).filter(Student.active == 1).all()
+    # Base query for active students
+    query = db.query(Student).filter(Student.active == 1)
+    
+    # Apply role-based filters (HOD sees dept, Tutor sees class, etc.)
+    query = apply_role_filters(query, current_user, Student)
+    
+    students = query.all()
     output = []
+    
+    now_utc = datetime.utcnow().isoformat()
+    
     for s in students:
         last_log = db.query(EntryExitLog).filter(
             EntryExitLog.student_id == s.id
         ).order_by(EntryExitLog.id.desc()).first()
 
         if last_log and last_log.direction == "OUT":
+            # Check for overdue leave
+            active_leave = db.query(LeaveApplication).filter(
+                LeaveApplication.student_id == s.id,
+                LeaveApplication.status.in_(["approved", "used"])
+            ).order_by(LeaveApplication.id.desc()).first()
+            
+            is_overdue = False
+            expected_return = None
+            if active_leave:
+                expected_return = active_leave.to_dt
+                if now_utc > active_leave.to_dt:
+                    is_overdue = True
+                    
             output.append({
+                "id": s.id,
                 "student_id": s.id,
                 "name": s.name,
                 "reg_no": s.reg_no,
                 "dept_name": s.department.name if s.department else "",
+                "institution_code": s.institution.code if s.institution else "",
+                "room_no": s.room.room_number if s.room else "",
+                "mobile": s.mobile,
                 "guardian_phone": s.guardian_phone,
+                "exit_time": last_log.created_at,
                 "out_since": last_log.created_at,
-                "flagged": last_log.flagged
+                "flagged": last_log.flagged,
+                "is_overdue": is_overdue,
+                "to_dt": expected_return,
+                "expected_return": expected_return,
+                "leave_type": active_leave.leave_type if active_leave else None
             })
     return output

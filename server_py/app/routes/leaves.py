@@ -91,21 +91,11 @@ def get_leaves(
         query = query.filter(LeaveApplication.status == status)
 
     role = current_user["role"]
-    
-    # Institution isolation (except for super/hostel admins)
-    if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
-        query = query.filter(Student.institution_id == current_user["institution_id"])
-
     if role == "STUDENT":
         query = query.filter(LeaveApplication.student_id == current_user["id"])
-    elif role == "TUTOR" and current_user.get("dept_id"):
-        query = query.filter(Student.dept_id == current_user["dept_id"])
-        if current_user.get("year"):
-            query = query.filter(Student.year == current_user["year"])
-    elif role == "HOD" and current_user.get("dept_id"):
-        query = query.filter(Student.dept_id == current_user["dept_id"])
-    elif role == "WARDEN" and current_user.get("gender"):
-        query = query.filter(Student.gender == current_user["gender"])
+    else:
+        from app.dependencies import apply_role_filters
+        query = apply_role_filters(query, current_user, Student)
 
     results = query.order_by(LeaveApplication.id.desc()).all()
     output = []

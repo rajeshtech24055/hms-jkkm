@@ -9,18 +9,7 @@ export default function OutsidePage() {
   useEffect(() => {
     api('/api/gate/outside')
       .then(data => {
-        // Filter based on role scope in a real app, demo client-side filtering
-        let filtered = data;
-        if (user.role === 'WARDEN') {
-           filtered = filtered.filter(s => s.gender === user.gender && s.institution_id === user.institution_id);
-        } else if (user.role === 'TUTOR') {
-           filtered = filtered.filter(s => s.dept_id === user.dept_id && s.year === user.year);
-        } else if (user.role === 'HOD') {
-           filtered = filtered.filter(s => s.dept_id === user.dept_id);
-        } else if (user.role === 'PRINCIPAL' || user.role === 'HOSTEL_ADMIN') {
-           filtered = filtered.filter(s => s.institution_id === user.institution_id);
-        }
-        setStudents(filtered);
+        setStudents(data);
       })
       .catch(console.error)
       .finally(() => setLoading(false));

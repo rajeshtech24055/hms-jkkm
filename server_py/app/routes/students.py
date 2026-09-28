@@ -11,7 +11,7 @@ import qrcode
 from app.database import get_db
 from app.config import settings
 from app.security import create_access_token, decode_token, get_password_hash
-from app.dependencies import get_current_user, require_roles
+from app.dependencies import get_current_user, require_roles, apply_role_filters
 from app.models.models import Student, Institution, Department, Room, EntryExitLog, User, LeaveApplication
 
 router = APIRouter(prefix="/api/students", tags=["Students"])
@@ -110,19 +110,8 @@ def get_students(
         elif active == "vacated":
             query = query.filter(Student.active == 0)
 
-    # Institution isolation (applies to all staff roles if they are assigned to an institution, except SUPER_ADMIN/HOSTEL_ADMIN who see all)
-    if current_user["role"] not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
-        query = query.filter(Student.institution_id == current_user["institution_id"])
-
-    # Role-specific filtering
-    if current_user["role"] == "TUTOR" and current_user.get("dept_id"):
-        query = query.filter(Student.dept_id == current_user["dept_id"])
-        if current_user.get("year"):
-            query = query.filter(Student.year == current_user["year"])
-    elif current_user["role"] == "HOD" and current_user.get("dept_id"):
-        query = query.filter(Student.dept_id == current_user["dept_id"])
-    elif current_user["role"] == "WARDEN" and current_user.get("gender"):
-        query = query.filter(Student.gender == current_user["gender"])
+    # Apply shared RBAC filters (Institution, Dept, Year, Gender)
+    query = apply_role_filters(query, current_user, Student)
 
     results = query.all()
     output = []
