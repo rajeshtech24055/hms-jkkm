@@ -34,10 +34,10 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.detail || data.error || 'Login failed. Please check your email and password.');
       login(data.user, data.token);
     } catch (err) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Login failed. Please check your email and password.');
     } finally {
       setLoading(false);
     }
