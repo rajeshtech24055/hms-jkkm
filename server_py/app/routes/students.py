@@ -279,7 +279,7 @@ def create_student(
         try:
             parts = data.dob.split("-")  # YYYY-MM-DD
             if len(parts) == 3:
-                default_password = parts[2] + parts[1] + parts[0]  # DDMMYYYY
+                default_password = parts[1] + parts[2] + parts[0]  # MMDDYYYY
         except:
             pass
             

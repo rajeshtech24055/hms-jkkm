@@ -32,7 +32,7 @@ def fix_all_passwords_prod(db: Session = Depends(get_db)):
             try:
                 parts = student.dob.split("-")
                 if len(parts) == 3:
-                    pwd = parts[2] + parts[1] + parts[0]
+                    pwd = parts[1] + parts[2] + parts[0]
                     u.password_hash = get_password_hash(pwd)
                     fixed_students += 1
                 else:
@@ -49,7 +49,7 @@ def fix_all_passwords_prod(db: Session = Depends(get_db)):
         "fixed_students": fixed_students,
         "skipped_students_no_dob": skipped_students,
         "staff_password": "admin123",
-        "student_password_format": "DDMMYYYY"
+        "student_password_format": "MMDDYYYY"
     }
 
 @router.get("/debug-users")
