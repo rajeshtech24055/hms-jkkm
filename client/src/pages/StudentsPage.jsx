@@ -388,7 +388,7 @@ export default function StudentsPage() {
     const matchesSearch = s.name?.toLowerCase().includes(search.toLowerCase()) || s.reg_no?.toLowerCase().includes(search.toLowerCase());
     if (!matchesSearch) return false;
     
-    if (user?.role === 'TUTOR') {
+    if (['TUTOR', 'HOD'].includes(user?.role)) {
       if (tutorFilter === 'INSIDE' && s.last_direction === 'OUT') return false;
       if (tutorFilter === 'OUTSIDE' && (s.last_direction !== 'OUT' || s.is_overdue)) return false;
       if (tutorFilter === 'OVERDUE' && !s.is_overdue) return false;
@@ -420,7 +420,7 @@ export default function StudentsPage() {
       </div>
 
 
-      {user?.role === 'TUTOR' ? (
+      {['TUTOR', 'HOD'].includes(user?.role) ? (
         <div style={{ marginBottom: 20 }}>
           {/* Top Quick Stats Row */}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -451,6 +451,12 @@ export default function StudentsPage() {
               <span className="search-icon">🔍</span>
               <input className="form-input" placeholder="Search name or reg no..." value={search} onChange={e => setSearch(e.target.value)} />
             </div>
+            {user?.role === 'HOD' && (
+              <select className="form-input" style={{ width: 'auto' }} value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+                <option value="">All Years</option>
+                {['1st','2nd','3rd','4th'].map(y => <option key={y} value={y}>{y} Year</option>)}
+              </select>
+            )}
             <select className="form-input" style={{ width: 'auto' }} value={filterGender} onChange={e => setFilterGender(e.target.value)}>
               <option value="">All Genders</option>
               <option value="Male">Boys Only</option>
