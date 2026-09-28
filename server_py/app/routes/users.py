@@ -92,6 +92,8 @@ def create_user(
         raise HTTPException(status_code=400, detail="Email already registered")
 
     default_pw = data.password if data.password else "admin123"
+    if data.role == "STUDENT":
+        raise HTTPException(status_code=400, detail="Student accounts cannot be created through this endpoint. Use /api/students instead.")
 
     user = User(
         name=data.name,
