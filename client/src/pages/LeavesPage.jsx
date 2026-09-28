@@ -292,13 +292,35 @@ export default function LeavesPage() {
                   <label className="form-label">Approver Remarks</label>
                   <input type="text" className="form-input" value={remark} onChange={e => setRemark(e.target.value)} placeholder="Optional for approval, required for rejection" />
                 </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button className="btn btn-success" style={{ flex: 1 }} onClick={() => { handleApprove(selectedLeave.id, 'approve', remark); setSelectedLeave(null); setRemark(''); }}>✅ Approve</button>
-                  <button className="btn btn-danger" style={{ flex: 1 }} onClick={() => { 
-                    if(!remark) { alert('Please provide a reason for rejection.'); return; }
-                    handleApprove(selectedLeave.id, 'reject', remark); setSelectedLeave(null); setRemark(''); 
-                  }}>❌ Reject</button>
-                </div>
+
+                {/* Emergency leave: show 3 options for Warden */}
+                {selectedLeave.is_emergency && user?.role === 'WARDEN' ? (
+                  <>
+                    <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, marginBottom: 12, fontSize: 13 }}>
+                      🚨 <strong>Emergency Leave</strong> — Choose how to handle this:
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <button className="btn btn-success" onClick={() => { handleApprove(selectedLeave.id, 'approve_direct', remark); setSelectedLeave(null); setRemark(''); }}>
+                        🚀 Approve Directly (Bypass Chain)
+                      </button>
+                      <button className="btn btn-primary" style={{ background: 'var(--primary)' }} onClick={() => { handleApprove(selectedLeave.id, 'approve', remark); setSelectedLeave(null); setRemark(''); }}>
+                        ⏩ Approve &amp; Forward to Tutor
+                      </button>
+                      <button className="btn btn-danger" onClick={() => {
+                        if (!remark) { alert('Please provide a reason for rejection.'); return; }
+                        handleApprove(selectedLeave.id, 'reject', remark); setSelectedLeave(null); setRemark('');
+                      }}>❌ Reject</button>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button className="btn btn-success" style={{ flex: 1 }} onClick={() => { handleApprove(selectedLeave.id, 'approve', remark); setSelectedLeave(null); setRemark(''); }}>✅ Approve</button>
+                    <button className="btn btn-danger" style={{ flex: 1 }} onClick={() => {
+                      if (!remark) { alert('Please provide a reason for rejection.'); return; }
+                      handleApprove(selectedLeave.id, 'reject', remark); setSelectedLeave(null); setRemark('');
+                    }}>❌ Reject</button>
+                  </div>
+                )}
               </>
             )}
           </div>

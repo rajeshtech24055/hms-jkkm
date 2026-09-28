@@ -71,7 +71,7 @@ class LeaveCreate(BaseModel):
     is_emergency: Optional[int] = 0
 
 class ApprovalDecision(BaseModel):
-    decision: str  # 'approve' | 'reject'
+    decision: str  # 'approve' | 'reject' | 'approve_direct'
     reason: Optional[str] = None
 
 
@@ -254,6 +254,28 @@ def approve_leave(
         
         # Push notification to student
         notify_user(db, leave.student_id, "Leave Rejected", f"Your leave was rejected by {approver_name}.", {"type": "leave"})
+
+    elif data.decision == "approve_direct" and leave.is_emergency:
+        # ── Direct / Emergency bypass approval (Warden fast-tracks) ────
+        leave.status = "approved"
+        leave.current_level = level  # record who approved
+
+        if student:
+            msg = (
+                f"✅ EMERGENCY LEAVE DIRECTLY APPROVED\n\n"
+                f"Dear Parent/Guardian of {student.name},\n\n"
+                f"The emergency leave for your ward {student.name} ({student.reg_no}) "
+                f"has been DIRECTLY APPROVED by {approver_label} ({approver_name}) "
+                f"without waiting for the full chain, due to the emergency nature.\n\n"
+                f"  📅 From      : {leave.from_dt[:10]}\n"
+                f"  📅 To        : {leave.to_dt[:10]}\n"
+                f"  📍 Destination: {leave.place}\n"
+                f"  🗒️ Leave Type : {leave.type}\n\n"
+                f"📞 If you have any concerns, contact {approver_label}: {approver_phone}"
+            )
+            _notify_parent(db, student, "LEAVE_APPROVED", msg, background_tasks)
+        
+        notify_user(db, leave.student_id, "🚨 Emergency Leave Approved", f"Your emergency leave was directly approved by {approver_name}.", {"type": "leave"})
 
     else:  # approved at this level
         if level >= 4:
