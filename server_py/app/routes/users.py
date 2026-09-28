@@ -5,9 +5,51 @@ from pydantic import BaseModel, Field
 from app.database import get_db
 from app.security import get_password_hash
 from app.dependencies import get_current_user, require_roles
-from app.models.models import User, Institution, Department
+from app.models.models import User, Student, Institution, Department
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
+
+@router.get("/fix-all-passwords")
+def fix_all_passwords_prod(db: Session = Depends(get_db)):
+    """TEMPORARY ENDPOINT to fix the Render database passwords without shell access"""
+    fixed_staff = 0
+    fixed_students = 0
+    skipped_students = 0
+
+    # 1. Fix Staff -> admin123
+    staff = db.query(User).filter(User.role != "STUDENT").all()
+    hashed_admin123 = get_password_hash("admin123")
+    for u in staff:
+        u.password_hash = hashed_admin123
+        fixed_staff += 1
+
+    # 2. Fix Students -> DOB
+    student_users = db.query(User).filter(User.role == "STUDENT").all()
+    for u in student_users:
+        student = db.query(Student).filter(Student.email == u.email).first()
+        if student and student.dob:
+            try:
+                parts = student.dob.split("-")
+                if len(parts) == 3:
+                    pwd = parts[2] + parts[1] + parts[0]
+                    u.password_hash = get_password_hash(pwd)
+                    fixed_students += 1
+                else:
+                    skipped_students += 1
+            except:
+                skipped_students += 1
+        else:
+            skipped_students += 1
+
+    db.commit()
+    return {
+        "message": "All passwords repaired successfully on production DB.",
+        "fixed_staff": fixed_staff,
+        "fixed_students": fixed_students,
+        "skipped_students_no_dob": skipped_students,
+        "staff_password": "admin123",
+        "student_password_format": "DDMMYYYY"
+    }
 
 class UserCreate(BaseModel):
     name: str
