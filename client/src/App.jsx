@@ -52,7 +52,7 @@ const PAGE_META = {
 // All accessible pages per role
 const ROLE_PAGES = {
   SUPER_ADMIN:     ['dashboard','users','students','rooms','departments','leaves','vacate','gate','outside','mess','mess_analytics','menu','inventory','maintenance','notices','complaints','audit','lobby'],
-  HOSTEL_ADMIN:    ['dashboard','students','rooms','departments','leaves','vacate','gate','outside','mess_analytics','notices','complaints'],
+  HOSTEL_ADMIN:    ['dashboard','students','rooms','departments','vacate','outside','mess_analytics','notices','complaints'],
   WARDEN:          ['dashboard','students','rooms','leaves','vacate','outside','notices','complaints'],
   TUTOR:           ['dashboard','students','leaves','outside','notices'],
   HOD:             ['dashboard','students','leaves','outside','notices'],
@@ -68,7 +68,7 @@ const ROLE_PAGES = {
 // Bottom nav pinned shortcuts (max 4 items)
 const ROLE_BOTTOM_NAV = {
   SUPER_ADMIN:     ['dashboard','students','leaves','gate'],
-  HOSTEL_ADMIN:    ['dashboard','students','leaves','rooms'],
+  HOSTEL_ADMIN:    ['dashboard','students','vacate','rooms'],
   WARDEN:          ['dashboard','leaves','rooms','outside'],
   TUTOR:           ['dashboard','leaves','outside','notices'],
   HOD:             ['dashboard','leaves','outside','notices'],
