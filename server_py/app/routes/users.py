@@ -91,7 +91,7 @@ def create_user(
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    default_pw = data.password if data.password else "password123"
+    default_pw = data.password if data.password else "admin123"
 
     user = User(
         name=data.name,
