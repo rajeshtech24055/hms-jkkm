@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, apply_role_filters
 from app.models.models import (
     Student, LeaveApplication, EntryExitLog, Room, Complaint,
     MaintenanceRequest, MessItem, MessUsageLog, MessFoodWastage,
@@ -24,14 +24,13 @@ def get_analytics_overview(
     student_q = db.query(Student).filter(Student.active == 1)
     room_q = db.query(Room)
     
-    # Institution Isolation
+    student_q = apply_role_filters(student_q, current_user, Student)
+
+    # Room Isolation (Rooms don't have dept/year, just institution and gender)
     if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
-        student_q = student_q.filter(Student.institution_id == current_user["institution_id"])
         room_q = room_q.filter(Room.institution_id == current_user["institution_id"])
         
-    # Gender Isolation for Wardens
     if role == "WARDEN" and current_user.get("gender"):
-        student_q = student_q.filter(Student.gender == current_user["gender"])
         room_q = room_q.filter(Room.gender == current_user["gender"])
 
     total_students = student_q.count()
@@ -39,10 +38,7 @@ def get_analytics_overview(
     
     # Apply same filtering logic to leaves
     leave_q = db.query(LeaveApplication).join(Student, LeaveApplication.student_id == Student.id)
-    if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
-        leave_q = leave_q.filter(Student.institution_id == current_user["institution_id"])
-    if role == "WARDEN" and current_user.get("gender"):
-        leave_q = leave_q.filter(Student.gender == current_user["gender"])
+    leave_q = apply_role_filters(leave_q, current_user, Student)
 
     pending_leaves = leave_q.filter(LeaveApplication.status == "pending").count()
     approved_leaves = leave_q.filter(
@@ -78,10 +74,7 @@ def get_analytics_overview(
 
     # Complaints
     comp_q = db.query(Complaint).join(Student, Complaint.student_id == Student.id)
-    if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
-        comp_q = comp_q.filter(Student.institution_id == current_user["institution_id"])
-    if role == "WARDEN" and current_user.get("gender"):
-        comp_q = comp_q.filter(Student.gender == current_user["gender"])
+    comp_q = apply_role_filters(comp_q, current_user, Student)
         
     open_complaints = comp_q.filter(Complaint.status.in_(["open", "in_progress"])).count()
     
@@ -97,10 +90,7 @@ def get_analytics_overview(
     # Complaints breakdown by category
     complaint_cats = db.query(Complaint.category, func.count(Complaint.id).label("count"))\
         .join(Student, Complaint.student_id == Student.id)
-    if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
-        complaint_cats = complaint_cats.filter(Student.institution_id == current_user["institution_id"])
-    if role == "WARDEN" and current_user.get("gender"):
-        complaint_cats = complaint_cats.filter(Student.gender == current_user["gender"])
+    complaint_cats = apply_role_filters(complaint_cats, current_user, Student)
         
     complaint_cats = complaint_cats.group_by(Complaint.category).all()
     complaints_by_cat = [{"category": c[0], "count": c[1]} for c in complaint_cats]

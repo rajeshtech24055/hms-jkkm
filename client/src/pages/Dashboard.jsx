@@ -18,9 +18,13 @@ export default function Dashboard({ onNavigate }) {
     // Fetch notices for everyone
     api('/api/notices').then(setNotices).catch(() => {});
 
-    // Only fetch analytics/forecasts for admins/staff to avoid 401 errors for students/mess managers
-    if (['SUPER_ADMIN', 'HOSTEL_ADMIN', 'WARDEN'].includes(user?.role)) {
+    // Fetch base analytics overview for all staff who need stats cards
+    if (['SUPER_ADMIN', 'HOSTEL_ADMIN', 'WARDEN', 'TUTOR', 'HOD'].includes(user?.role)) {
       api('/api/analytics/overview').then(setStats).catch(() => {});
+    }
+
+    // Only fetch AI forecasts for higher level admins
+    if (['SUPER_ADMIN', 'HOSTEL_ADMIN', 'WARDEN'].includes(user?.role)) {
       api('/api/forecast/occupancy').then(setAiOccupancy).catch(() => {});
       api('/api/forecast/meals').then(setAiMeals).catch(() => {});
       api('/api/forecast/analytics/anomalies').then(setAnomalies).catch(() => {});
