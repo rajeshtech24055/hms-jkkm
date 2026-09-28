@@ -242,8 +242,17 @@ export default function StudentsPage() {
     try {
       const url = editId ? `/api/students/${editId}` : '/api/students';
       const method = editId ? 'PUT' : 'POST';
+      let parsedDob = form.dob;
+      if (parsedDob && parsedDob.includes('-')) {
+        const parts = parsedDob.split('-');
+        if (parts.length === 3 && parts[0].length <= 2 && parts[2].length === 4) {
+          parsedDob = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+      }
+
       const payload = {
         ...form,
+        dob: parsedDob,
         institution_id: parseInt(form.institution_id),
         dept_id: parseInt(form.dept_id),
         room_id: form.room_id ? parseInt(form.room_id) : null,
@@ -265,6 +274,14 @@ export default function StudentsPage() {
   };
 
   const openEdit = (s) => {
+    let displayDob = s.dob || '';
+    if (displayDob && displayDob.includes('-')) {
+      const parts = displayDob.split('-');
+      if (parts.length === 3 && parts[0].length === 4) {
+        displayDob = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
+
     setForm({
       reg_no: s.reg_no || '',
       name: s.name || '',
@@ -280,7 +297,7 @@ export default function StudentsPage() {
       blood_group: s.blood_group || 'O+',
       mobile: s.mobile || '',
       email: s.email || '',
-      dob: s.dob || ''
+      dob: displayDob
     });
     setEditId(s.id);
     setShowAdd(true);
@@ -699,9 +716,12 @@ export default function StudentsPage() {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Date of Birth *</label>
-                  <input className="form-input" type="date" required value={form.dob} onChange={e => setForm(f => ({ ...f, dob: e.target.value }))} />
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>🔐 DOB will be used as default login password (DDMMYYYY format)</div>
+                  <label className="form-label">Date of Birth (DD-MM-YYYY) *</label>
+                  <input className="form-input" type="text" placeholder="e.g. 15-08-2005" required value={form.dob} onChange={e => {
+                    let val = e.target.value.replace(/[^\d-]/g, '');
+                    setForm(f => ({ ...f, dob: val }))
+                  }} />
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>🔐 Used as default password. Enter exactly as DD-MM-YYYY.</div>
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 12, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
