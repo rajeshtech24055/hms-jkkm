@@ -183,6 +183,7 @@ export default function StudentsPage() {
   const [filterYear, setFilterYear] = useState('');
   const [filterGender, setFilterGender] = useState('');
   const [filterActive, setFilterActive] = useState('active');
+  const [tutorFilter, setTutorFilter] = useState('ALL');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [historyData, setHistoryData] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -383,10 +384,26 @@ export default function StudentsPage() {
   const INST_BADGE = { ENG: 'badge-eng', AGRI: 'badge-agri', PHARM: 'badge-pharm' };
   const GENDER_ICON = { Male: '👨', Female: '👩' };
 
-  const filteredStudents = students.filter(s =>
-    s.name?.toLowerCase().includes(search.toLowerCase()) ||
-    s.reg_no?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = s.name?.toLowerCase().includes(search.toLowerCase()) || s.reg_no?.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    
+    if (user?.role === 'TUTOR') {
+      if (tutorFilter === 'INSIDE' && s.last_direction === 'OUT') return false;
+      if (tutorFilter === 'OUTSIDE' && (s.last_direction !== 'OUT' || s.is_overdue)) return false;
+      if (tutorFilter === 'OVERDUE' && !s.is_overdue) return false;
+    }
+    return true;
+  });
+
+  const tutorStats = {
+    total: students.length,
+    boys: students.filter(s => s.gender === 'Male').length,
+    girls: students.filter(s => s.gender === 'Female').length,
+    inside: students.filter(s => s.last_direction !== 'OUT').length,
+    outside: students.filter(s => s.last_direction === 'OUT' && !s.is_overdue).length,
+    overdue: students.filter(s => s.is_overdue).length,
+  };
 
   return (
     <div className="page-enter">
@@ -403,34 +420,74 @@ export default function StudentsPage() {
       </div>
 
 
-      <div className="filter-row">
-        <div className="search-bar" style={{ flex: 1, minWidth: 200 }}>
-          <span className="search-icon">🔍</span>
-          <input className="form-input" placeholder="Search name or reg no..." value={search} onChange={e => setSearch(e.target.value)} />
+      {user?.role === 'TUTOR' ? (
+        <div style={{ marginBottom: 20 }}>
+          {/* Top Quick Stats Row */}
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+            <div onClick={() => setTutorFilter('ALL')} style={{ flex: 1, minWidth: 120, padding: 16, borderRadius: 12, cursor: 'pointer', border: `2px solid ${tutorFilter === 'ALL' ? 'var(--primary)' : 'var(--border)'}`, background: tutorFilter === 'ALL' ? 'rgba(99,102,241,0.1)' : 'var(--bg-card)' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>👥 ALL STUDENTS</div>
+              <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>{tutorStats.total}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>👨 {tutorStats.boys} Boys &nbsp;•&nbsp; 👩 {tutorStats.girls} Girls</div>
+            </div>
+            
+            <div onClick={() => setTutorFilter('INSIDE')} style={{ flex: 1, minWidth: 120, padding: 16, borderRadius: 12, cursor: 'pointer', border: `2px solid ${tutorFilter === 'INSIDE' ? 'var(--success)' : 'var(--border)'}`, background: tutorFilter === 'INSIDE' ? 'rgba(16,185,129,0.1)' : 'var(--bg-card)' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>🏠 INSIDE HOSTEL</div>
+              <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: 'var(--success)' }}>{tutorStats.inside}</div>
+            </div>
+
+            <div onClick={() => setTutorFilter('OUTSIDE')} style={{ flex: 1, minWidth: 120, padding: 16, borderRadius: 12, cursor: 'pointer', border: `2px solid ${tutorFilter === 'OUTSIDE' ? 'var(--warning)' : 'var(--border)'}`, background: tutorFilter === 'OUTSIDE' ? 'rgba(245,158,11,0.1)' : 'var(--bg-card)' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>🚶 OUTSIDE</div>
+              <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: 'var(--warning)' }}>{tutorStats.outside}</div>
+            </div>
+
+            <div onClick={() => setTutorFilter('OVERDUE')} style={{ flex: 1, minWidth: 120, padding: 16, borderRadius: 12, cursor: 'pointer', border: `2px solid ${tutorFilter === 'OVERDUE' ? 'var(--danger)' : 'var(--border)'}`, background: tutorFilter === 'OVERDUE' ? 'rgba(239,68,68,0.1)' : 'var(--bg-card)' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>⚠️ OVERDUE</div>
+              <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: 'var(--danger)' }}>{tutorStats.overdue}</div>
+            </div>
+          </div>
+
+          <div className="filter-row">
+            <div className="search-bar" style={{ flex: 1 }}>
+              <span className="search-icon">🔍</span>
+              <input className="form-input" placeholder="Search name or reg no..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <select className="form-input" style={{ width: 'auto' }} value={filterGender} onChange={e => setFilterGender(e.target.value)}>
+              <option value="">All Genders</option>
+              <option value="Male">Boys Only</option>
+              <option value="Female">Girls Only</option>
+            </select>
+          </div>
         </div>
-        <select className="form-input" style={{ width: 'auto' }} value={filterActive} onChange={e => setFilterActive(e.target.value)}>
-          <option value="active">Active Hostelers</option>
-          <option value="vacated">Vacated Hostelers</option>
-          <option value="all">All Statuses</option>
-        </select>
-        <select className="form-input" style={{ width: 'auto' }} value={filterInst} onChange={e => setFilterInst(e.target.value)}>
-          <option value="">All Institutions</option>
-          {institutions.map(i => <option key={i.id} value={i.id}>{i.code}</option>)}
-        </select>
-        <select className="form-input" style={{ width: 'auto' }} value={filterDept} onChange={e => setFilterDept(e.target.value)}>
-          <option value="">All Departments</option>
-          {departments.filter(d => !filterInst || d.institution_id == filterInst).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-        </select>
-        <select className="form-input" style={{ width: 'auto' }} value={filterYear} onChange={e => setFilterYear(e.target.value)}>
-          <option value="">All Years</option>
-          {['1st','2nd','3rd','4th'].map(y => <option key={y} value={y}>{y} Year</option>)}
-        </select>
-        <select className="form-input" style={{ width: 'auto' }} value={filterGender} onChange={e => setFilterGender(e.target.value)}>
-          <option value="">Both</option>
-          <option value="Male">Boys</option>
-          <option value="Female">Girls</option>
-        </select>
-      </div>
+      ) : (
+        <div className="filter-row">
+          <div className="search-bar" style={{ flex: 1, minWidth: 200 }}>
+            <span className="search-icon">🔍</span>
+            <input className="form-input" placeholder="Search name or reg no..." value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <select className="form-input" style={{ width: 'auto' }} value={filterActive} onChange={e => setFilterActive(e.target.value)}>
+            <option value="active">Active Hostelers</option>
+            <option value="vacated">Vacated Hostelers</option>
+            <option value="all">All Statuses</option>
+          </select>
+          <select className="form-input" style={{ width: 'auto' }} value={filterInst} onChange={e => setFilterInst(e.target.value)}>
+            <option value="">All Institutions</option>
+            {institutions.map(i => <option key={i.id} value={i.id}>{i.code}</option>)}
+          </select>
+          <select className="form-input" style={{ width: 'auto' }} value={filterDept} onChange={e => setFilterDept(e.target.value)}>
+            <option value="">All Departments</option>
+            {departments.filter(d => !filterInst || d.institution_id == filterInst).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+          <select className="form-input" style={{ width: 'auto' }} value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+            <option value="">All Years</option>
+            {['1st','2nd','3rd','4th'].map(y => <option key={y} value={y}>{y} Year</option>)}
+          </select>
+          <select className="form-input" style={{ width: 'auto' }} value={filterGender} onChange={e => setFilterGender(e.target.value)}>
+            <option value="">Both</option>
+            <option value="Male">Boys</option>
+            <option value="Female">Girls</option>
+          </select>
+        </div>
+      )}
 
       <div className="card no-padding">
         <div className="table-wrap">

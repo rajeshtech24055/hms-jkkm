@@ -124,6 +124,17 @@ def get_students(
         ).order_by(EntryExitLog.id.desc()).first()
 
         last_dir = last_log.direction if last_log else "IN"
+        
+        is_overdue = False
+        if last_dir == "OUT":
+            from datetime import datetime
+            now_utc = datetime.utcnow().isoformat()
+            active_leave = db.query(LeaveApplication).filter(
+                LeaveApplication.student_id == student.id,
+                LeaveApplication.status.in_(["approved", "used"])
+            ).order_by(LeaveApplication.id.desc()).first()
+            if active_leave and active_leave.to_dt and now_utc > active_leave.to_dt:
+                is_overdue = True
 
         s_dict = {
             "id": student.id,
@@ -151,7 +162,8 @@ def get_students(
             "photo_url": student.photo_url,
             "qr_token": student.qr_token,
             "active": student.active,
-            "last_direction": last_dir
+            "last_direction": last_dir,
+            "is_overdue": is_overdue
         }
         output.append(s_dict)
     return output
