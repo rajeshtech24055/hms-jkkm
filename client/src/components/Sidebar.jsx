@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 
 const ROLE_MENUS = {
   SUPER_ADMIN:    ['dashboard', 'users', 'students', 'rooms', 'departments', 'leaves', 'vacate', 'gate', 'mess', 'mess_analytics', 'inventory', 'maintenance',  'notices', 'complaints', 'audit', 'lobby'],
-  HOSTEL_ADMIN:   ['dashboard', 'students', 'rooms', 'leaves', 'vacate', 'gate', 'mess_analytics', 'notices', 'complaints'],
+  HOSTEL_ADMIN:   ['dashboard', 'students', 'rooms', 'vacate', 'mess_analytics', 'notices', 'complaints'],
   WARDEN:         ['dashboard', 'rooms', 'leaves', 'vacate', 'outside',  'notices', 'complaints'],
   TUTOR:          ['dashboard', 'leaves', 'outside', 'notices'],
   HOD:            ['dashboard', 'leaves', 'outside', 'notices'],
