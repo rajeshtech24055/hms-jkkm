@@ -11,6 +11,9 @@ def send_email_alert(to_email: str, subject: str, message_body: str):
     """
     Sends an email alert to the given email address.
     """
+    logging.info(f"Email sending is temporarily disabled. (Skipping email to {to_email})")
+    return False
+    
     if not to_email:
         return False
         
