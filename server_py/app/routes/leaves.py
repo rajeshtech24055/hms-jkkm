@@ -52,6 +52,10 @@ def _notify_parent(db: Session, student: Student, notif_type: str, message: str,
     if background_tasks:
         # Simulate SMS to parent in real-time on UI
         background_tasks.add_task(sio.emit, "notification", f"📱 SMS to {guardian_phone}: {message[:60]}...")
+        
+        # Trigger real SMS via Fast2SMS
+        from app.utils.sms import send_sms
+        background_tasks.add_task(send_sms, guardian_phone, message)
 
 
 class LeaveCreate(BaseModel):
