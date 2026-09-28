@@ -1,6 +1,7 @@
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from pydantic import BaseModel, Field
 from app.database import get_db
 from app.security import get_password_hash
@@ -129,7 +130,8 @@ def create_user(
     current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN")),
     db: Session = Depends(get_db)
 ):
-    existing = db.query(User).filter(User.email == data.email).first()
+    req_email = data.email.strip().lower()
+    existing = db.query(User).filter(func.lower(User.email) == req_email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -139,7 +141,7 @@ def create_user(
 
     user = User(
         name=data.name,
-        email=data.email,
+        email=req_email,
         password_hash=get_password_hash(default_pw),
         role=data.role,
         institution_id=data.institution_id,
