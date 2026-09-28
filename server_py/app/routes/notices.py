@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.dependencies import get_current_user, require_roles
 from app.models.models import Notice
-from app.utils.push import notify_role
+from app.utils.push import notify_all
 
 router = APIRouter(prefix="/api/notices", tags=["Notices"])
 
@@ -35,6 +35,25 @@ def create_notice(
     db.add(n)
     db.commit()
     
-    notify_role(db, "STUDENT", "New Notice Posted", data.title, {"type": "notice"})
+    notify_all(db, "New Notice Posted", data.title, {"type": "notice"})
     
     return {"id": n.id, "message": "Notice posted successfully"}
+
+@router.delete("/{notice_id}")
+def delete_notice(
+    notice_id: int,
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "HOSTEL_ADMIN", "WARDEN")),
+    db: Session = Depends(get_db)
+):
+    n = db.query(Notice).filter(Notice.id == notice_id).first()
+    if not n:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Notice not found")
+    
+    # Optionally, restrict deletion to the user who posted it, or SUPER_ADMIN
+    # if current_user["role"] != "SUPER_ADMIN" and n.posted_by != current_user["id"]:
+    #     raise HTTPException(status_code=403, detail="Not authorized to delete this notice")
+        
+    db.delete(n)
+    db.commit()
+    return {"message": "Notice deleted successfully"}

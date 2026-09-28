@@ -83,6 +83,18 @@ export default function RoomsPage() {
     return { total_rooms: rooms.length, total_beds, occupied, available: total_beds - occupied };
   }, [rooms]);
 
+  const dynamicStats = useMemo(() => {
+    if (!visibleRooms) return { total_rooms: 0, total_beds: 0, available: 0 };
+    const total_beds = visibleRooms.reduce((s,r) => s + (r.capacity||0), 0);
+    const occupied   = visibleRooms.reduce((s,r) => s + (r.occupied||0), 0);
+    return {
+       total_rooms: visibleRooms.length,
+       total_beds,
+       occupied,
+       available: total_beds - occupied
+    };
+  }, [visibleRooms]);
+
   // ─── Room click ────────────────────────────────────────────────────────────
   const handleRoomClick = async (room) => {
     setSelectedRoom(room); setLoadingStudents(true); setRoomStudents([]);
@@ -401,9 +413,9 @@ export default function RoomsPage() {
                       </div>
                     </div>
                     <div style={{ display:'flex', gap:16, marginTop:8 }}>
-                      <span style={{ fontSize:12, color:'var(--text-dim)' }}>🚪 {selectedHostel.total_rooms} rooms</span>
-                      <span style={{ fontSize:12, color:'var(--text-dim)' }}>🛏️ {selectedHostel.total_beds} beds</span>
-                      <span style={{ fontSize:12, color:'var(--success)', fontWeight:600 }}>✅ {selectedHostel.available} available</span>
+                      <span style={{ fontSize:12, color:'var(--text-dim)' }}>🚪 {dynamicStats.total_rooms} rooms in view</span>
+                      <span style={{ fontSize:12, color:'var(--text-dim)' }}>🛏️ {dynamicStats.total_beds} beds in view</span>
+                      <span style={{ fontSize:12, color:'var(--success)', fontWeight:600 }}>✅ {dynamicStats.available} available in view</span>
                     </div>
                   </div>
                   {canManage && selectedHostel.id !== 'unassigned' && (

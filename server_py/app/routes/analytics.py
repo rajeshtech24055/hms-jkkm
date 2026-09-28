@@ -54,6 +54,7 @@ def get_analytics_overview(
     # Students outside
     students = student_q.all()
     outside_cnt = 0
+    overdue_cnt = 0
     for s in students:
         last_log = db.query(EntryExitLog).filter(
             EntryExitLog.student_id == s.id,
@@ -61,6 +62,14 @@ def get_analytics_overview(
         ).order_by(EntryExitLog.id.desc()).first()
         if last_log and last_log.direction == "OUT":
             outside_cnt += 1
+            
+            # Check if overdue
+            active_leave = db.query(LeaveApplication).filter(
+                LeaveApplication.student_id == s.id,
+                LeaveApplication.status.in_(["approved", "used"])
+            ).order_by(LeaveApplication.id.desc()).first()
+            if active_leave and now_str > active_leave.to_dt:
+                overdue_cnt += 1
 
     total_rooms = room_q.count()
     total_capacity = room_q.with_entities(func.sum(Room.capacity)).scalar() or 1
@@ -138,6 +147,7 @@ def get_analytics_overview(
         "pendingLeaves": pending_leaves,
         "approvedLeaves": approved_leaves,
         "studentsOutside": outside_cnt,
+        "overdueStudents": overdue_cnt,
         "occupancyPct": occ_pct,
         "openComplaints": open_complaints,
         "expiringItems": expiring_items,

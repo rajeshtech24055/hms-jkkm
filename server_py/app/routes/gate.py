@@ -10,7 +10,7 @@ from app.dependencies import get_current_user, require_roles, apply_role_filters
 from app.models.models import Student, EntryExitLog, LeaveApplication, NotificationLog, Institution, Department
 from app.socket import sio
 from app.utils.push import notify_user
-from app.utils.sms import send_sms
+from app.utils.email_sender import send_email_alert
 
 router = APIRouter(prefix="/api/gate", tags=["Gate Scanner"])
 
@@ -170,8 +170,10 @@ def scan_gate(
             status="SENT",
             sent_at=now_str
         ))
-        background_tasks.add_task(sio.emit, "notification", f"📱 SMS to {parent_phone}: {msg}")
-        background_tasks.add_task(send_sms, parent_phone, msg)
+        target_email = student.guardian_email or student.email
+        if target_email:
+            background_tasks.add_task(send_email_alert, target_email, "JKKM Hostel - Gate Alert", msg)
+        background_tasks.add_task(sio.emit, "notification", f"📧 Email queued for {student.name}")
         notification_sent = {"recipient": parent_phone, "message": msg}
     elif direction == "IN":
         used_leave = db.query(LeaveApplication).filter(
@@ -192,8 +194,10 @@ def scan_gate(
             status="SENT",
             sent_at=now_str
         ))
-        background_tasks.add_task(sio.emit, "notification", f"📱 SMS to {parent_phone}: {msg}")
-        background_tasks.add_task(send_sms, parent_phone, msg)
+        target_email = student.guardian_email or student.email
+        if target_email:
+            background_tasks.add_task(send_email_alert, target_email, "JKKM Hostel - Gate Alert", msg)
+        background_tasks.add_task(sio.emit, "notification", f"📧 Email queued for {student.name}")
         notification_sent = {"recipient": parent_phone, "message": msg}
 
     db.commit()

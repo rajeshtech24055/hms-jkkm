@@ -50,12 +50,15 @@ def _notify_parent(db: Session, student: Student, notif_type: str, message: str,
         sent_at=datetime.utcnow().isoformat()
     ))
     if background_tasks:
-        # Simulate SMS to parent in real-time on UI
-        background_tasks.add_task(sio.emit, "notification", f"📱 SMS to {guardian_phone}: {message[:60]}...")
+        # Simulate notification to UI
+        background_tasks.add_task(sio.emit, "notification", f"📧 Email Alert queued for {student.name}'s guardian")
         
-        # Trigger real SMS via Fast2SMS
-        from app.utils.sms import send_sms
-        background_tasks.add_task(send_sms, guardian_phone, message)
+        # Trigger Email
+        from app.utils.email_sender import send_email_alert
+        target_email = student.guardian_email or student.email
+        if target_email:
+            subject = "JKKM Hostel - Leave Application Update"
+            background_tasks.add_task(send_email_alert, target_email, subject, message)
 
 
 class LeaveCreate(BaseModel):

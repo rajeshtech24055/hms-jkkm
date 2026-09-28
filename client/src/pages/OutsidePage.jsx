@@ -9,6 +9,11 @@ export default function OutsidePage() {
   useEffect(() => {
     api('/api/gate/outside')
       .then(data => {
+        data.sort((a, b) => {
+           if (a.is_overdue && !b.is_overdue) return -1;
+           if (!a.is_overdue && b.is_overdue) return 1;
+           return new Date(b.exit_time) - new Date(a.exit_time);
+        });
         setStudents(data);
       })
       .catch(console.error)
@@ -43,7 +48,7 @@ export default function OutsidePage() {
               </thead>
               <tbody>
                 {students.map(s => (
-                  <tr key={s.id}>
+                  <tr key={s.id} style={s.is_overdue ? { background: 'rgba(239, 68, 68, 0.05)', borderLeft: '4px solid var(--danger)' } : {}}>
                     <td>
                       <div style={{ fontWeight: 600 }}>{s.name}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{s.mobile}</div>

@@ -64,11 +64,19 @@ export default function Dashboard({ onNavigate }) {
             </div>
           )}
 
-          <div className="stat-card teal" onClick={() => onNavigate('outside')} style={{ cursor: 'pointer' }}>
-            <div className="stat-icon">🚶‍♂️</div>
-            <div className="stat-value">{stats.studentsOutside}</div>
-            <div className="stat-label">Students Outside Now</div>
-          </div>
+          {stats.overdueStudents > 0 ? (
+            <div className="stat-card rose" onClick={() => onNavigate('outside')} style={{ cursor: 'pointer', border: '2px solid var(--danger)' }}>
+              <div className="stat-icon" style={{ background: 'var(--danger)', color: 'white' }}>⚠️</div>
+              <div className="stat-value" style={{ color: 'var(--danger)' }}>{stats.overdueStudents}</div>
+              <div className="stat-label" style={{ color: 'var(--danger)', fontWeight: 700 }}>OVERDUE Students!</div>
+            </div>
+          ) : (
+            <div className="stat-card teal" onClick={() => onNavigate('outside')} style={{ cursor: 'pointer' }}>
+              <div className="stat-icon">🚶‍♂️</div>
+              <div className="stat-value">{stats.studentsOutside}</div>
+              <div className="stat-label">Students Outside Now</div>
+            </div>
+          )}
 
           <div className="stat-card rose" onClick={() => onNavigate(['WARDEN', 'TUTOR', 'HOD'].includes(user?.role) ? 'complaints' : 'mess')} style={{ cursor: 'pointer' }}>
             <div className="stat-icon">{['WARDEN', 'TUTOR', 'HOD'].includes(user?.role) ? '📝' : '⚠️'}</div>

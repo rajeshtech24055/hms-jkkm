@@ -313,12 +313,60 @@ export default function MessPage() {
         <>
           {/* ── TAB: Items ─────────────────────────────────────────────────────── */}
           {tab === 'items' && (
+            isMobileManager ? (
+               <div className="mobile-items-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                 {items.length === 0 ? (
+                    <div style={{ textAlign:'center', padding:40, color:'var(--text-muted)', gridColumn: '1 / -1' }}>No grocery items found. Click "Add Mess Item" to get started.</div>
+                 ) : flattenedItems.map(item => (
+                   <div key={item.row_key} className="card" style={{ padding: '16px', background: item.is_expired ? 'rgba(239,68,68,0.06)' : item.expires_soon ? 'rgba(245,158,11,0.06)' : 'var(--bg-card)', borderLeft: item.is_expired ? '4px solid #ef4444' : item.expires_soon ? '4px solid #f59e0b' : '4px solid transparent' }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 8 }}>
+                         <div>
+                            <div style={{ fontWeight: item.is_first_batch ? 700 : 500, fontSize: 16 }}>{!item.is_first_batch && <span style={{ color: 'var(--border)' }}>↳ </span>}{item.name}</div>
+                            {item.batch_no && <div style={{ fontSize:12, color:'var(--text-dim)' }}>Batch: {item.batch_no}</div>}
+                         </div>
+                         {item.is_first_batch && <span className="badge badge-gray">{item.category}</span>}
+                      </div>
+                      
+                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom: 8, fontSize: 13 }}>
+                         <div>
+                           <div style={{ color:'var(--text-dim)' }}>Stock</div>
+                           <div style={{ fontWeight:700, fontSize:15 }}>{item.current_stock} <span style={{fontSize:11, color:'var(--text-muted)'}}>{item.unit}</span></div>
+                         </div>
+                         {item.unit_price && (
+                            <div style={{ textAlign:'right' }}>
+                              <div style={{ color:'var(--text-dim)' }}>Value</div>
+                              <div style={{ fontWeight:600 }}>₹{(item.unit_price * item.current_stock).toLocaleString('en-IN')}</div>
+                            </div>
+                         )}
+                      </div>
+
+                      {item.exp_date && (
+                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                            <div style={{ flex: 1 }}>
+                               <div style={{ fontSize:11, color:'var(--text-dim)', marginBottom:4 }}>Expires: {item.exp_date}</div>
+                               <ExpiryBadge item={item} />
+                            </div>
+                         </div>
+                      )}
+                      
+                      {isFoodAdmin && item.is_first_batch && (
+                         <div style={{ display:'flex', gap:8, marginTop: 16 }}>
+                            <button className="btn btn-sm" style={{ flex:1, background:'var(--surface-2)', color:'var(--success)' }} onClick={() => openRestock(item.master_item)}>📦 Restock</button>
+                            <button className="btn btn-sm" style={{ flex:1, background:'var(--surface-2)', color:'var(--warning)' }} onClick={() => { setSelectedItem(item.master_item); setUsageForm(f => ({ ...f, item_id: item.master_item.id })); setShowUsageModal(true); }}>📉 Log</button>
+                            <button className="btn btn-icon btn-ghost" style={{ background:'var(--bg-card2)' }} onClick={() => openEdit(item.master_item)}>✏️</button>
+                         </div>
+                      )}
+                   </div>
+                 ))}
+               </div>
+            ) : (
             <div className="card" style={{ padding:0 }}>
               <div className="table-wrap">
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Item / Batch</th>
+                      <th>Item Name</th>
+                      <th>Batch No</th>
                       <th>Category</th>
                       <th>Stock</th>
                       <th>Mfg. Date</th>
@@ -336,41 +384,27 @@ export default function MessPage() {
                       ) : flattenedItems.map(item => (
                         <tr key={item.row_key} style={{ background: item.is_expired ? 'rgba(239,68,68,0.06)' : item.expires_soon ? 'rgba(245,158,11,0.06)' : undefined, borderBottom: !item.is_first_batch ? '1px dashed var(--border)' : undefined }}>
                           <td>
-                            <div style={{ fontWeight: item.is_first_batch ? 600 : 400, color: item.is_first_batch ? 'inherit' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                              {!item.is_first_batch && <span style={{ color: 'var(--border)' }}>↳</span>}
+                            <div style={{ fontWeight: item.is_first_batch ? 600 : 400, color: item.is_first_batch ? 'inherit' : 'var(--text-muted)' }}>
+                              {!item.is_first_batch && <span style={{ color: 'var(--border)', marginRight: 6 }}>↳</span>}
                               {item.name}
                             </div>
-                            {item.batch_no && <div style={{ fontSize:11, color:'var(--text-dim)', marginLeft: item.is_first_batch ? 0 : 20 }}>Batch: {item.batch_no}</div>}
                           </td>
+                          <td style={{ fontSize:13, color:'var(--text-muted)' }}>{item.batch_no || '—'}</td>
                           <td>{item.is_first_batch && <span className="badge badge-gray">{item.category}</span>}</td>
                           <td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <span style={{ fontWeight:800, fontSize: 14 }}>{item.current_stock}</span>
                               <span style={{ fontSize:11, fontWeight:600, color: 'var(--text-dim)', background: 'var(--bg-card2)', padding: '2px 6px', borderRadius: 6 }}>{item.unit}</span>
+                              {item.is_first_batch && item.master_item.current_stock <= item.reorder_level && (
+                                <span style={{ fontSize:11, color:'var(--danger)', fontWeight: 700 }} title="Low Stock">⚠️</span>
+                              )}
                             </div>
-                            {item.is_first_batch && (
-                              <>
-                                <div style={{ fontSize:11, color:'var(--text-dim)', marginTop: 2 }}>Total overall: {item.master_item.current_stock} {item.unit}</div>
-                                {item.master_item.current_stock <= item.reorder_level && (
-                                  <div style={{ fontSize:11, color:'var(--danger)', fontWeight: 700, marginTop: 2 }}>
-                                    ⚠️ Low Stock (&le; {item.reorder_level})
-                                  </div>
-                                )}
-                              </>
-                            )}
                           </td>
                           <td style={{ fontSize:13 }}>{item.mfg_date || '—'}</td>
                           <td style={{ fontSize:13, fontWeight: item.is_expired||item.expires_soon ? 700 : 400, color: item.is_expired ? '#ef4444' : item.expires_soon ? '#f59e0b' : undefined }}>
-                            {item.exp_date ? (
-                              <>
-                                {item.exp_date}
-                                <div style={{ fontSize:11, color:'var(--text-dim)' }}>
-                                  {daysUntilExpiry(item.exp_date) !== null ? (daysUntilExpiry(item.exp_date) < 0 ? `${Math.abs(daysUntilExpiry(item.exp_date))}d ago` : `in ${daysUntilExpiry(item.exp_date)}d`) : ''}
-                                </div>
-                              </>
-                            ) : '—'}
+                            {item.exp_date ? item.exp_date : '—'}
                           </td>
-                          <td><ExpiryBadge item={item} /></td>
+                          <td>{item.exp_date ? <ExpiryBadge item={item} /> : '—'}</td>
                           <td style={{ fontSize:12 }}>{item.supplier || '—'}</td>
                           <td style={{ fontSize:13 }}>{item.unit_price ? `₹${item.unit_price}` : '—'}</td>
                           <td style={{ fontSize:13, fontWeight:600 }}>{item.unit_price && item.current_stock ? '₹' + (item.unit_price * item.current_stock).toLocaleString('en-IN', { maximumFractionDigits:2 }) : '—'}</td>
@@ -378,10 +412,10 @@ export default function MessPage() {
                             <td>
                               {item.is_first_batch && (
                                 <div style={{ display:'flex', gap:6, flexWrap:'nowrap' }}>
-                                  <button className="btn btn-icon btn-ghost" style={{ border: 'none', background: 'var(--bg-card2)', color: 'var(--success)' }} onClick={() => openRestock(item.master_item)} title="Restock">📦</button>
-                                  <button className="btn btn-icon btn-ghost" style={{ border: 'none', background: 'var(--bg-card2)', color: 'var(--warning)' }} onClick={() => { setSelectedItem(item.master_item); setUsageForm(f => ({ ...f, item_id: item.master_item.id })); setShowUsageModal(true); }} title="Log Usage">📉</button>
-                                  <button className="btn btn-icon btn-ghost" style={{ border: 'none', background: 'var(--bg-card2)' }} onClick={() => openEdit(item.master_item)} title="Edit Master Item">✏️</button>
-                                  <button className="btn btn-icon btn-ghost" style={{ border: 'none', background: 'var(--bg-card2)', color: 'var(--danger)' }} onClick={() => handleDelete(item.master_item.id, item.master_item.name)} title="Delete All">🗑️</button>
+                                  <button className="btn btn-sm btn-ghost" style={{ background: 'var(--bg-card2)', color: 'var(--success)' }} onClick={() => openRestock(item.master_item)}>📦 Restock</button>
+                                  <button className="btn btn-sm btn-ghost" style={{ background: 'var(--bg-card2)', color: 'var(--warning)' }} onClick={() => { setSelectedItem(item.master_item); setUsageForm(f => ({ ...f, item_id: item.master_item.id })); setShowUsageModal(true); }}>📉 Log</button>
+                                  <button className="btn btn-icon btn-ghost" style={{ background: 'var(--bg-card2)' }} onClick={() => openEdit(item.master_item)} title="Edit">✏️</button>
+                                  <button className="btn btn-icon btn-ghost" style={{ background: 'var(--bg-card2)', color: 'var(--danger)' }} onClick={() => handleDelete(item.master_item.id, item.master_item.name)} title="Delete">🗑️</button>
                                 </div>
                               )}
                             </td>
@@ -392,10 +426,29 @@ export default function MessPage() {
                   </table>
                 </div>
               </div>
-            )}
+            )
+          )}
 
           {/* ── TAB: Usage Log ──────────────────────────────────────────────────── */}
           {tab === 'usage' && (
+            isMobileManager ? (
+               <div className="mobile-usage-grid" style={{ display: 'grid', gap: 12 }}>
+                 {usageLogs.length === 0 ? (
+                    <div style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>No usage logs yet.</div>
+                 ) : usageLogs.map(log => (
+                   <div key={log.id} className="card" style={{ padding: '16px' }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom: 6 }}>
+                         <div style={{ fontWeight:700, fontSize: 15 }}>{log.item_name}</div>
+                         <div style={{ fontSize:14, fontWeight:800, color:'var(--primary)' }}>{log.qty_used} {log.unit}</div>
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'space-between', fontSize: 12, color:'var(--text-dim)' }}>
+                         <div>📅 {log.date}</div>
+                         <div>👤 {log.logged_by_name || '—'}</div>
+                      </div>
+                   </div>
+                 ))}
+               </div>
+            ) : (
             <div className="card" style={{ padding:0 }}>
               <div className="table-wrap">
                 <table className="table">
@@ -415,6 +468,7 @@ export default function MessPage() {
                 </table>
               </div>
             </div>
+            )
           )}
 
           {/* ── TAB: Expiry Alerts ──────────────────────────────────────────────── */}

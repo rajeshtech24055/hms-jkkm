@@ -100,3 +100,23 @@ def notify_role(db, role: str, title: str, body: str, data: dict = None):
         tokens = db.query(DeviceToken).filter(DeviceToken.user_id.in_(user_ids)).all()
         for t in tokens:
             send_push_notification(t.token, title, body, data)
+
+def notify_all(db, title: str, body: str, data: dict = None):
+    from app.models.models import DeviceToken, User, NotificationLog
+    
+    users = db.query(User).filter(User.active == 1).all()
+    for u in users:
+        log_entry = NotificationLog(
+            user_id=u.id,
+            type=title,
+            message=body,
+            status="SENT"
+        )
+        db.add(log_entry)
+    db.commit()
+    
+    user_ids = [str(u.id) for u in users]
+    if user_ids:
+        tokens = db.query(DeviceToken).filter(DeviceToken.user_id.in_(user_ids)).all()
+        for t in tokens:
+            send_push_notification(t.token, title, body, data)
