@@ -293,7 +293,7 @@ def create_student(
         guardian_email=data.guardian_email,
         blood_group=data.blood_group,
         mobile=data.mobile,
-        email=data.email,
+        email=data.email.strip().lower(),
         dob=data.dob,
         qr_token=qr_token,
         active=1
@@ -306,7 +306,7 @@ def create_student(
     hashed_pwd = get_password_hash(default_password)
     user_acc = User(
         name=data.name,
-        email=data.email,
+        email=data.email.strip().lower(),
         password_hash=hashed_pwd,
         role="STUDENT",
         institution_id=data.institution_id,

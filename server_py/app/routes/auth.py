@@ -26,8 +26,9 @@ otp_store = {}
 
 @router.post("/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
+    req_email = req.email.strip().lower()
     # 1. Try finding in Users table (non-students)
-    user = db.query(User).filter(User.email == req.email, User.role != "STUDENT").first()
+    user = db.query(User).filter(User.email == req_email, User.role != "STUDENT").first()
     if user:
         if user.active != 1:
             raise HTTPException(status_code=400, detail="Account is deactivated")
@@ -56,13 +57,13 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         }
 
     # 2. Try finding in Students table (for STUDENT role users)
-    student = db.query(Student).filter(Student.email == req.email).first()
+    student = db.query(Student).filter(Student.email == req_email).first()
     if student:
         if student.active != 1:
             raise HTTPException(status_code=400, detail="Student account is inactive")
 
         # Check the User record which has the hashed DOB password
-        user_acc = db.query(User).filter(User.email == req.email, User.role == "STUDENT").first()
+        user_acc = db.query(User).filter(User.email == req_email, User.role == "STUDENT").first()
         if user_acc:
             if not verify_password(req.password, user_acc.password_hash):
                 raise HTTPException(status_code=401, detail="Invalid email or password")
