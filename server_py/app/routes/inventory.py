@@ -33,9 +33,15 @@ class AdjustQty(BaseModel):
 
 class AssignAsset(BaseModel):
     item_id: int
-    assigned_to_type: str
-    assigned_to_id: str
-    qty: int
+    room_label: Optional[str] = None
+    student_name: Optional[str] = None
+    assigned_qty: float
+    assigned_date: Optional[str] = None
+    expected_return: Optional[str] = None
+    notes: Optional[str] = None
+
+class ReturnAsset(BaseModel):
+    condition_on_return: Optional[str] = "Good"
 
 class POCreate(BaseModel):
     vendor_name: str
@@ -172,10 +178,13 @@ def adjust_qty(
     
     tx = AssetTransaction(
         item_id=item_id,
-        type="ADJUST",
-        qty=diff,
+        item_name=item.name,
+        category=item.category,
+        type="Adjustment",
+        qty_change=diff,
+        unit=item.unit,
         reason=data.reason,
-        logged_by=str(current_user["id"])
+        done_by=str(current_user["id"])
     )
     db.add(tx)
     db.commit()
@@ -191,25 +200,34 @@ def assign_asset(
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     
-    if item.qty < data.qty:
+    if item.qty < data.assigned_qty:
         raise HTTPException(status_code=400, detail="Insufficient quantity")
         
-    item.qty -= data.qty
+    item.qty -= data.assigned_qty
     item.total_price = item.qty * (item.unit_price or 0.0)
     
     assignment = AssetAssignment(
         item_id=data.item_id,
-        assigned_to_type=data.assigned_to_type,
-        assigned_to_id=data.assigned_to_id,
-        qty=data.qty,
-        assigned_by=str(current_user["id"])
+        item_name=item.name,
+        category=item.category,
+        room_label=data.room_label,
+        student_name=data.student_name,
+        assigned_qty=data.assigned_qty,
+        unit=item.unit,
+        assigned_date=data.assigned_date,
+        expected_return=data.expected_return,
+        notes=data.notes,
+        status="Active"
     )
     tx = AssetTransaction(
         item_id=data.item_id,
-        type="OUT",
-        qty=-data.qty,
-        reason=f"Assigned to {data.assigned_to_type} {data.assigned_to_id}",
-        logged_by=str(current_user["id"])
+        item_name=item.name,
+        category=item.category,
+        type="Issue",
+        qty_change=-data.assigned_qty,
+        unit=item.unit,
+        reason=f"Assigned to {data.room_label or data.student_name}",
+        done_by=str(current_user["id"])
     )
     db.add(assignment)
     db.add(tx)
@@ -219,6 +237,7 @@ def assign_asset(
 @router.put("/assignments/{id}/return")
 def return_asset(
     id: int,
+    data: ReturnAsset,
     current_user: dict = Depends(require_roles("SUPER_ADMIN", "INVENTORY_ADMIN", "HOSTEL_ADMIN")),
     db: Session = Depends(get_db)
 ):
@@ -228,18 +247,22 @@ def return_asset(
         
     item = db.query(AssetInventoryItem).filter(AssetInventoryItem.id == assignment.item_id).first()
     if item:
-        item.qty += assignment.qty
+        item.qty += assignment.assigned_qty
         item.total_price = item.qty * (item.unit_price or 0.0)
         
     assignment.status = "Returned"
-    assignment.returned_at = datetime.utcnow().isoformat()
+    assignment.condition_on_return = data.condition_on_return
+    assignment.updated_at = datetime.utcnow().isoformat()
     
     tx = AssetTransaction(
         item_id=assignment.item_id,
-        type="IN",
-        qty=assignment.qty,
-        reason=f"Returned from {assignment.assigned_to_type} {assignment.assigned_to_id}",
-        logged_by=str(current_user["id"])
+        item_name=assignment.item_name,
+        category=assignment.category,
+        type="Return",
+        qty_change=assignment.assigned_qty,
+        unit=assignment.unit,
+        reason=f"Returned from {assignment.room_label or assignment.student_name} (Cond: {data.condition_on_return})",
+        done_by=str(current_user["id"])
     )
     db.add(tx)
     db.commit()

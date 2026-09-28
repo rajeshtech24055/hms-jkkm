@@ -223,27 +223,7 @@ class AssetInventoryItem(Base):
     notes = Column(Text, nullable=True)
     updated_at = Column(String, nullable=True)
 
-class AssetTransaction(Base):
-    __tablename__ = "materials_transactions"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    item_id = Column(Integer, nullable=False)
-    type = Column(String, nullable=False)  # "IN" or "OUT" or "ADJUST"
-    qty = Column(Integer, nullable=False)
-    reason = Column(String, nullable=True)
-    logged_by = Column(String, nullable=True)
-    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
 
-class AssetAssignment(Base):
-    __tablename__ = "materials_assignments"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    item_id = Column(Integer, nullable=False)
-    assigned_to_type = Column(String, nullable=False) # "ROOM", "STAFF", "STUDENT", "DEPT"
-    assigned_to_id = Column(String, nullable=False)
-    qty = Column(Integer, nullable=False)
-    assigned_by = Column(String, nullable=True)
-    assigned_at = Column(String, default=lambda: datetime.utcnow().isoformat())
-    returned_at = Column(String, nullable=True)
-    status = Column(String, default="Active") # "Active", "Returned"
 
 class MaintenanceRequest(Base):
     __tablename__ = "maintenance_requests"
