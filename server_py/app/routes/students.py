@@ -353,7 +353,11 @@ def update_student(
     if data.blood_group is not None: student.blood_group = data.blood_group
     if data.mobile is not None: student.mobile = data.mobile
     if data.email is not None: student.email = data.email
-    if data.dob is not None: student.dob = data.dob
+    dob_changed = False
+    if data.dob is not None:
+        if student.dob != data.dob:
+            dob_changed = True
+        student.dob = data.dob
 
     # Sync User Account if it exists
     user_acc = db.query(User).filter(User.email == student.email, User.role == "STUDENT").first()
@@ -364,6 +368,16 @@ def update_student(
         user_acc.phone = student.mobile
         user_acc.institution_id = student.institution_id
         user_acc.dept_id = student.dept_id
+        
+        # Sync password if DOB changed
+        if dob_changed and student.dob:
+            try:
+                parts = student.dob.split("-")
+                if len(parts) == 3:
+                    new_password = parts[2] + parts[1] + parts[0]
+                    user_acc.password_hash = get_password_hash(new_password)
+            except:
+                pass
 
     db.commit()
     return {"success": True, "message": "Student updated successfully"}
