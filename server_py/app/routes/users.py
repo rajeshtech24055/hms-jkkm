@@ -52,6 +52,40 @@ def fix_all_passwords_prod(db: Session = Depends(get_db)):
         "student_password_format": "DDMMYYYY"
     }
 
+@router.get("/debug-users")
+def debug_users_prod(db: Session = Depends(get_db)):
+    """TEMPORARY ENDPOINT to see exactly what users exist on production"""
+    users = db.query(User).order_by(User.id.desc()).all()
+    
+    # Check if admin123 is valid for each
+    hashed_admin123 = get_password_hash("admin123")
+    
+    results = []
+    for u in users:
+        from app.security import verify_password
+        is_admin123 = verify_password("admin123", u.password_hash)
+        
+        dob_pwd = None
+        is_dob = False
+        if u.role == "STUDENT":
+            student = db.query(Student).filter(Student.email == u.email).first()
+            if student and student.dob:
+                parts = student.dob.split("-")
+                if len(parts) == 3:
+                    dob_pwd = parts[2] + parts[1] + parts[0]
+                    is_dob = verify_password(dob_pwd, u.password_hash)
+        
+        results.append({
+            "id": u.id,
+            "name": u.name,
+            "email_exact": f"'{u.email}'",
+            "role": u.role,
+            "is_admin123": is_admin123,
+            "dob_pwd": dob_pwd,
+            "is_dob_pwd": is_dob
+        })
+    return results
+
 class UserCreate(BaseModel):
     name: str
     email: str = Field(pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
