@@ -51,7 +51,8 @@ export default function MyCardPage() {
         // Fallback: scan all students and match by email or reg_no
         try {
           const all = await api('/api/students');
-          student = all.find(s =>
+          const studentList = Array.isArray(all) ? all : (all.data || []);
+          student = studentList.find(s =>
             s.email === user.email ||
             s.reg_no === user.reg_no
           );
