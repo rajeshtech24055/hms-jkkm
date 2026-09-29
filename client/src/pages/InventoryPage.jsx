@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const CATEGORIES = ['Furniture','Bedding','Electrical','Cleaning','Safety','Plumbing','Sports','Kitchen','Stationery','Other'];
@@ -452,9 +454,9 @@ export default function InventoryPage() {
               <option value="">All Items</option>
               {items.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
             </select>
-            <input type="date" className="form-input" style={{ width:'auto' }} value={txFilter.from_date} onChange={e => setTxFilter(f => ({ ...f, from_date:e.target.value }))} />
+            <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="From date" selected={txFilter.from_date ? new Date(txFilter.from_date) : null} onChange={d => setTxFilter(f => ({ ...f, from_date: d ? d.toISOString().split('T')[0] : '' }))} />
             <span style={{ display:'flex', alignItems:'center', color:'var(--text-muted)', fontSize:13 }}>to</span>
-            <input type="date" className="form-input" style={{ width:'auto' }} value={txFilter.to_date} onChange={e => setTxFilter(f => ({ ...f, to_date:e.target.value }))} />
+            <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="To date" selected={txFilter.to_date ? new Date(txFilter.to_date) : null} onChange={d => setTxFilter(f => ({ ...f, to_date: d ? d.toISOString().split('T')[0] : '' }))} />
             {(txFilter.type||txFilter.item_id||txFilter.from_date||txFilter.to_date) && <button className="btn btn-ghost btn-sm" onClick={() => setTxFilter({ item_id:'', type:'', from_date:'', to_date:'' })}>✕ Clear</button>}
           </div>
           <div className="card" style={{ padding:0 }}>
@@ -605,11 +607,11 @@ export default function InventoryPage() {
             <div style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
               <div className="form-group" style={{ margin:0 }}>
                 <label className="form-label">From Date</label>
-                <input type="date" className="form-input" value={reportDates.from_date} onChange={e => setReportDates(d => ({ ...d, from_date:e.target.value }))} />
+                <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={reportDates.from_date ? new Date(reportDates.from_date) : null} onChange={d => setReportDates(r => ({ ...r, from_date: d ? d.toISOString().split('T')[0] : '' }))} />
               </div>
               <div className="form-group" style={{ margin:0 }}>
                 <label className="form-label">To Date</label>
-                <input type="date" className="form-input" value={reportDates.to_date} onChange={e => setReportDates(d => ({ ...d, to_date:e.target.value }))} />
+                <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={reportDates.to_date ? new Date(reportDates.to_date) : null} onChange={d => setReportDates(r => ({ ...r, to_date: d ? d.toISOString().split('T')[0] : '' }))} />
               </div>
               {(reportDates.from_date||reportDates.to_date) && <button className="btn btn-ghost btn-sm" style={{ alignSelf:'flex-end', marginBottom:2 }} onClick={() => setReportDates({ from_date:'', to_date:'' })}>✕ Clear</button>}
             </div>
@@ -745,11 +747,11 @@ export default function InventoryPage() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Purchase Date</label>
-                  <input type="date" className="form-input" value={itemForm.purchase_date} onChange={e => setItemForm(f => ({ ...f, purchase_date:e.target.value }))} />
+                  <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={itemForm.purchase_date ? new Date(itemForm.purchase_date) : null} onChange={d => setItemForm(f => ({ ...f, purchase_date: d ? d.toISOString().split('T')[0] : '' }))} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Warranty Expiry</label>
-                  <input type="date" className="form-input" value={itemForm.warranty_expiry} onChange={e => setItemForm(f => ({ ...f, warranty_expiry:e.target.value }))} />
+                  <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={itemForm.warranty_expiry ? new Date(itemForm.warranty_expiry) : null} onChange={d => setItemForm(f => ({ ...f, warranty_expiry: d ? d.toISOString().split('T')[0] : '' }))} />
                 </div>
                 <div className="form-group" style={{ gridColumn:'1 / -1' }}>
                   <label className="form-label">Location / Block</label>
@@ -862,11 +864,11 @@ export default function InventoryPage() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Issue Date</label>
-                  <input type="date" className="form-input" value={asgnForm.assigned_date} onChange={e => setAsgnForm(f => ({ ...f, assigned_date:e.target.value }))} />
+                  <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={asgnForm.assigned_date ? new Date(asgnForm.assigned_date) : null} onChange={d => setAsgnForm(f => ({ ...f, assigned_date: d ? d.toISOString().split('T')[0] : '' }))} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Expected Return Date</label>
-                  <input type="date" className="form-input" value={asgnForm.expected_return} onChange={e => setAsgnForm(f => ({ ...f, expected_return:e.target.value }))} />
+                  <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={asgnForm.expected_return ? new Date(asgnForm.expected_return) : null} onChange={d => setAsgnForm(f => ({ ...f, expected_return: d ? d.toISOString().split('T')[0] : '' }))} />
                 </div>
               </div>
               <div className="form-group">

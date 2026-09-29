@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 const CATEGORIES = ['Grains', 'Pulses', 'Vegetables', 'Fruits', 'Dairy', 'Spices', 'Oil & Fat', 'Beverages', 'Bakery', 'Cleaning', 'General'];
 const UNITS = ['kg', 'g', 'litre', 'ml', 'dozen', 'piece', 'packet', 'box', 'bottle', 'can'];
@@ -663,11 +665,11 @@ export default function MessPage() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">🏭 Manufacturing Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={form.mfg_date} onChange={e => setForm(f => ({ ...f, mfg_date: e.target.value }))} />
+                      <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={form.mfg_date ? new Date(form.mfg_date) : null} onChange={d => setForm(f => ({ ...f, mfg_date: d ? d.toISOString().split('T')[0] : '' }))} />
                     </div>
                     <div className="form-group">
                       <label className="form-label">📅 Expiry Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={form.exp_date} onChange={e => setForm(f => ({ ...f, exp_date: e.target.value }))} />
+                      <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={form.exp_date ? new Date(form.exp_date) : null} onChange={d => setForm(f => ({ ...f, exp_date: d ? d.toISOString().split('T')[0] : '' }))} />
                       {form.mfg_date && form.exp_date && new Date(form.exp_date) <= new Date(form.mfg_date) && (
                         <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>⚠️ Expiry must be after manufacturing date</div>
                       )}
@@ -761,11 +763,11 @@ export default function MessPage() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">🏭 Manufacturing Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={form.mfg_date || ''} onChange={e => setForm(f => ({ ...f, mfg_date: e.target.value }))} />
+                      <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={form.mfg_date ? new Date(form.mfg_date) : null} onChange={d => setForm(f => ({ ...f, mfg_date: d ? d.toISOString().split('T')[0] : '' }))} />
                     </div>
                     <div className="form-group">
                       <label className="form-label">📅 Expiry Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={form.exp_date || ''} onChange={e => setForm(f => ({ ...f, exp_date: e.target.value }))} />
+                      <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={form.exp_date ? new Date(form.exp_date) : null} onChange={d => setForm(f => ({ ...f, exp_date: d ? d.toISOString().split('T')[0] : '' }))} />
                       {form.mfg_date && form.exp_date && new Date(form.exp_date) <= new Date(form.mfg_date) && (
                         <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>⚠️ Expiry must be after manufacturing date</div>
                       )}
@@ -836,11 +838,11 @@ export default function MessPage() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">🏭 Manufacturing Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={restockForm.mfg_date} onChange={e => setRestockForm(f => ({ ...f, mfg_date: e.target.value }))} />
+                      <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={restockForm.mfg_date ? new Date(restockForm.mfg_date) : null} onChange={d => setRestockForm(f => ({ ...f, mfg_date: d ? d.toISOString().split('T')[0] : '' }))} />
                     </div>
                     <div className="form-group">
                       <label className="form-label">📅 Expiry Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={restockForm.exp_date} onChange={e => setRestockForm(f => ({ ...f, exp_date: e.target.value }))} />
+                      <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" selected={restockForm.exp_date ? new Date(restockForm.exp_date) : null} onChange={d => setRestockForm(f => ({ ...f, exp_date: d ? d.toISOString().split('T')[0] : '' }))} />
                     </div>
                   </>
                 )}

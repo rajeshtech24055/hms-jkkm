@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell
@@ -155,9 +157,9 @@ export default function MessAnalytics() {
           
           {dateRange === 'custom' && (
             <>
-              <input type="date" className="form-input" value={customStart} onChange={e => setCustomStart(e.target.value)} />
+              <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="From date" selected={customStart ? new Date(customStart) : null} onChange={d => setCustomStart(d ? d.toISOString().split('T')[0] : '')} />
               <span>to</span>
-              <input type="date" className="form-input" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+              <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="To date" selected={customEnd ? new Date(customEnd) : null} onChange={d => setCustomEnd(d ? d.toISOString().split('T')[0] : '')} />
             </>
           )}
         </div>
@@ -321,7 +323,7 @@ export default function MessAnalytics() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="form-group" style={{ gridColumn: '1/-1' }}>
                   <label className="form-label">Date *</label>
-                  <input type="date" className="form-input" required value={logForm.date} onChange={e => setLogForm(f => ({ ...f, date: e.target.value }))} />
+                  <DatePicker className="form-input" dateFormat="dd-MM-yyyy" placeholderText="DD-MM-YYYY" required selected={logForm.date ? new Date(logForm.date) : null} onChange={d => setLogForm(f => ({ ...f, date: d ? d.toISOString().split('T')[0] : '' }))} />
                 </div>
 
                 <div className="form-group">
