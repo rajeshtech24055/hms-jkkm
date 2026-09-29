@@ -44,9 +44,12 @@ class ReturnAsset(BaseModel):
     condition_on_return: Optional[str] = "Good"
 
 class POCreate(BaseModel):
-    vendor_name: str
-    total_amount: float
-    items_json: str
+    item_name: str
+    category: Optional[str] = None
+    requested_qty: float
+    unit_price: Optional[float] = 0.0
+    vendor: Optional[str] = None
+    notes: Optional[str] = None
 
 class POUpdate(BaseModel):
     status: str
@@ -285,10 +288,14 @@ def create_po(
     po_no = f"PO-{uuid.uuid4().hex[:6].upper()}"
     po = PurchaseOrder(
         po_number=po_no,
-        vendor_name=data.vendor_name,
-        items_json=data.items_json,
-        total_amount=data.total_amount,
-        created_by=str(current_user["id"])
+        item_name=data.item_name,
+        category=data.category,
+        requested_qty=data.requested_qty,
+        unit_price=data.unit_price,
+        total_amount=float(data.requested_qty) * float(data.unit_price) if data.unit_price else 0.0,
+        vendor=data.vendor,
+        notes=data.notes,
+        requested_by=str(current_user["id"])
     )
     db.add(po)
     db.commit()
