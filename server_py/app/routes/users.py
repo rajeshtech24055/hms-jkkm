@@ -124,7 +124,7 @@ def get_users(
     ).outerjoin(Institution, User.institution_id == Institution.id)\
      .outerjoin(Department, User.dept_id == Department.id)
      
-    query = query.filter(User.is_deleted == False)
+    query = query.filter(User.is_deleted != True)
 
     if role:
         query = query.filter(User.role == role)
@@ -167,7 +167,7 @@ def get_staff_users(
 ):
     staff = db.query(User).filter(
         User.role.in_(["MAINTENANCE", "MESS_WORKER", "GATE_STAFF", "WARDEN"]),
-        User.is_deleted == False
+        User.is_deleted != True
     ).order_by(User.id.asc()).all()
     return [{"id": u.id, "name": u.name, "role": u.role} for u in staff]
 

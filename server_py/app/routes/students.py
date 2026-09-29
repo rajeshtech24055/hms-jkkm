@@ -115,7 +115,7 @@ def get_students(
     # Apply shared RBAC filters (Institution, Dept, Year, Gender)
     query = apply_role_filters(query, current_user, Student)
     
-    query = query.filter(Student.is_deleted == False)
+    query = query.filter(Student.is_deleted != True)
 
     total_count = query.count()
     results = query.offset(skip).limit(limit).all()
@@ -196,7 +196,7 @@ def get_student(
      .outerjoin(Room, Student.room_id == Room.id)\
      .order_by(Student.id.asc())\
      .filter(Student.id == student_id)\
-     .filter(Student.is_deleted == False).first()
+     .filter(Student.is_deleted != True).first()
 
     if not r:
         raise HTTPException(status_code=404, detail="Student not found")
