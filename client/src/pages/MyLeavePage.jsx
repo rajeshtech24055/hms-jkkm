@@ -31,7 +31,8 @@ export default function MyLeavePage() {
     setLoading(true);
     try {
       const stData = await api('/api/students');
-      const student = stData.find(s => s.email === user.email);
+      const studentList = Array.isArray(stData) ? stData : (stData.data || []);
+      const student = studentList.find(s => s.email === user.email);
       if (student) {
         setStudent(student);
         const leaveData = await api('/api/leaves');
