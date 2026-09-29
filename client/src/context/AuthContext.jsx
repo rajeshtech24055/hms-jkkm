@@ -132,7 +132,11 @@ export function AuthProvider({ children }) {
     }
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.detail || errData.error || 'API Error');
+      let errMsg = errData.detail || errData.error || 'API Error';
+      if (Array.isArray(errMsg)) {
+        errMsg = errMsg.map(e => e.msg || JSON.stringify(e)).join(', ');
+      }
+      throw new Error(errMsg);
     }
     return res.json();
   }, [token]);
