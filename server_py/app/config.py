@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Settings:
     PROJECT_NAME: str = "JKKM Hostel Management System (HMS)"

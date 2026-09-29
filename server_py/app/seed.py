@@ -11,7 +11,7 @@ from app.models.models import (
 )
 
 def seed_database():
-    Base.metadata.create_all(bind=engine)
+    # Database schema is now managed by Alembic.
     db: Session = SessionLocal()
 
     try:
