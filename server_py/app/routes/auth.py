@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
@@ -7,6 +7,7 @@ from app.database import get_db
 from app.security import verify_password, create_access_token, get_password_hash
 from app.dependencies import get_current_user
 from app.models.models import User, Student, DeviceToken
+from app.limiter import limiter
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
@@ -26,7 +27,8 @@ class OtpVerifyRequest(BaseModel):
 otp_store = {}
 
 @router.post("/login")
-def login(req: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     req_email = req.email.strip().lower()
     # 1. Try finding in Users table (non-students)
     user = db.query(User).filter(func.lower(User.email) == req_email, User.role != "STUDENT").first()
