@@ -25,7 +25,7 @@ def get_current_user(
     
     if role == "STUDENT":
         student = db.query(Student).filter(Student.id == user_id).first()
-        if not student:
+        if not student or student.is_deleted:
             raise HTTPException(status_code=401, detail="Student user not found")
         # Return dict representation compatible with user payload
         return {
@@ -41,7 +41,7 @@ def get_current_user(
         }
 
     user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.active != 1:
+    if not user or user.active != 1 or user.is_deleted:
         raise HTTPException(status_code=401, detail="User not found or inactive")
         
     return {

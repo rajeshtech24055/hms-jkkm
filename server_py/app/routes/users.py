@@ -123,6 +123,8 @@ def get_users(
         Department.name.label("dept_name")
     ).outerjoin(Institution, User.institution_id == Institution.id)\
      .outerjoin(Department, User.dept_id == Department.id)
+     
+    query = query.filter(User.is_deleted == False)
 
     if role:
         query = query.filter(User.role == role)
@@ -164,7 +166,8 @@ def get_staff_users(
     db: Session = Depends(get_db)
 ):
     staff = db.query(User).filter(
-        User.role.in_(["MAINTENANCE", "MESS_WORKER", "GATE_STAFF", "WARDEN"])
+        User.role.in_(["MAINTENANCE", "MESS_WORKER", "GATE_STAFF", "WARDEN"]),
+        User.is_deleted == False
     ).order_by(User.id.asc()).all()
     return [{"id": u.id, "name": u.name, "role": u.role} for u in staff]
 
@@ -238,7 +241,7 @@ def delete_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    db.delete(user)
+    user.is_deleted = True
     db.commit()
-    log_audit(db, current_user["id"], "DELETE", "User", f"Deleted user ID {user_id}")
+    log_audit(db, current_user["id"], "DELETE", "User", f"Soft deleted user ID {user_id}")
     return {"success": True, "message": "User deleted"}

@@ -31,6 +31,8 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     # 1. Try finding in Users table (non-students)
     user = db.query(User).filter(func.lower(User.email) == req_email, User.role != "STUDENT").first()
     if user:
+        if user.is_deleted:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
         if user.active != 1:
             raise HTTPException(status_code=400, detail="Account is deactivated")
         if not verify_password(req.password, user.password_hash):
@@ -60,6 +62,8 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     # 2. Try finding in Students table (for STUDENT role users)
     student = db.query(Student).filter(func.lower(Student.email) == req_email).first()
     if student:
+        if student.is_deleted:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
         if student.active != 1:
             raise HTTPException(status_code=400, detail="Student account is inactive")
 

@@ -47,6 +47,7 @@ class User(Base):
     gender = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     active = Column(Integer, default=1)
+    is_deleted = Column(Boolean, default=False)
 
     institution = relationship("Institution", back_populates="users")
     department = relationship("Department", back_populates="users")
@@ -89,6 +90,7 @@ class Student(Base):
     qr_token = Column(String, nullable=True)
     photo_url = Column(String, nullable=True)
     active = Column(Integer, default=1)
+    is_deleted = Column(Boolean, default=False)
 
     institution = relationship("Institution", back_populates="students")
     department = relationship("Department", back_populates="students")
