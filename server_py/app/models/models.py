@@ -156,6 +156,22 @@ class MessItem(Base):
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
     updated_at = Column(String, nullable=True)
 
+    restocks = relationship("MessRestockLog", back_populates="item")
+
+class MessRestockLog(Base):
+    __tablename__ = "mess_restock_logs"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    item_id = Column(Integer, ForeignKey("mess_materials_tools_items.id"))
+    qty = Column(Float, default=0.0)
+    unit_price = Column(Float, default=0.0)
+    batch_no = Column(String, nullable=True)
+    mfg_date = Column(String, nullable=True)
+    exp_date = Column(String, nullable=True)
+    supplier = Column(String, nullable=True)
+    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+    
+    item = relationship("MessItem", back_populates="restocks")
+
 class MessUsageLog(Base):
     __tablename__ = "mess_inventory_usage_logs"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -397,3 +413,16 @@ class DeviceToken(Base):
     user_type = Column(String, nullable=False) # 'STAFF' or 'STUDENT'
     token = Column(String, nullable=False, unique=True)
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    action = Column(String, index=True)
+    entity = Column(String)
+    details = Column(String)
+    ip_address = Column(String, nullable=True)
+    timestamp = Column(String, default=lambda: datetime.utcnow().isoformat())
+    
+    # Optional relationship to user
+    user = relationship("User", backref="audit_logs")

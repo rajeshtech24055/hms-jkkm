@@ -9,8 +9,8 @@ from app.seed import seed_database
 from app.routes import (
     auth, users, students, rooms, hostels, departments, gate, leaves, mess,
     mess_analytics, inventory, maintenance, vacate, sos, notices,
-    ai_forecast, dashboard, analytics, audit, menu, mess_feedback,
-    search, notifications, chat
+    ai_forecast, dashboard, analytics, menu, mess_feedback,
+    search, notifications, chat, audit
 )
 
 # 1. Import Socket.IO Server
@@ -116,6 +116,23 @@ def _run_migrations():
                     try: conn.execute(text("ALTER TABLE notification_logs ADD COLUMN sent_at VARCHAR;"))
                     except Exception: pass
 
+            # 8. Mess Restock Logs
+            if 'mess_restock_logs' not in existing_tables:
+                conn.execute(text("""
+                    CREATE TABLE mess_restock_logs (
+                        id SERIAL PRIMARY KEY,
+                        item_id INTEGER REFERENCES mess_materials_tools_items(id) ON DELETE CASCADE,
+                        qty FLOAT DEFAULT 0.0,
+                        unit_price FLOAT DEFAULT 0.0,
+                        batch_no VARCHAR,
+                        mfg_date VARCHAR,
+                        exp_date VARCHAR,
+                        supplier VARCHAR,
+                        created_at VARCHAR
+                    );
+                """))
+                print("[MIGRATION] Created mess_restock_logs table")
+
         print("[MIGRATION] Database migration completed successfully")
     except Exception as e:
         print(f"[MIGRATION] Warning: {e}")
@@ -156,12 +173,12 @@ app.include_router(notices.router)
 app.include_router(ai_forecast.router)
 app.include_router(dashboard.router)
 app.include_router(analytics.router)
-app.include_router(audit.router)
 app.include_router(menu.router)
 app.include_router(mess_feedback.router)
 app.include_router(search.router)
 app.include_router(notifications.router)
 app.include_router(chat.router)
+app.include_router(audit.router)
 
 # 7. Keep-alive / Health-check endpoint (no auth required)
 import time as _time

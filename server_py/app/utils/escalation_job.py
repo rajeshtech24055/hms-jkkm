@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app.models.models import MaintenanceRequest, DeviceToken, User
+from app.models.models import MaintenanceRequest, DeviceToken, User, MessItem, MessRestockLog
 from app.utils.push import send_push_notification
 
 logger = logging.getLogger(__name__)
@@ -75,6 +75,49 @@ async def maintenance_escalation_loop():
                             
             except Exception as e:
                 logger.error(f"Error inside escalation loop DB session: {e}")
+            finally:
+                db.close()
+                
+            # Check for Mess Item Expiry
+            try:
+                db = SessionLocal()
+                now = datetime.utcnow()
+                warning_date = now + timedelta(days=15)
+                
+                # We want to find all items or restocks expiring soon
+                # For simplicity, let's check MessItem (master) and MessRestockLog (batches)
+                expiring_items = db.query(MessItem).filter(
+                    MessItem.exp_date != None,
+                    MessItem.exp_date <= warning_date.strftime("%Y-%m-%d"),
+                    MessItem.exp_date >= now.strftime("%Y-%m-%d")
+                ).all()
+                
+                expiring_restocks = db.query(MessRestockLog).filter(
+                    MessRestockLog.exp_date != None,
+                    MessRestockLog.exp_date <= warning_date.strftime("%Y-%m-%d"),
+                    MessRestockLog.exp_date >= now.strftime("%Y-%m-%d")
+                ).all()
+                
+                # Combine unique item names
+                expiring_names = set([i.name for i in expiring_items])
+                for r in expiring_restocks:
+                    if r.item: expiring_names.add(r.item.name)
+                    
+                if expiring_names:
+                    from sqlalchemy import cast, String
+                    food_admins = db.query(DeviceToken).join(
+                        User, DeviceToken.user_id == cast(User.id, String)
+                    ).filter(User.role == "FOOD_ADMIN").all()
+                    
+                    for admin_token in food_admins:
+                        send_push_notification(
+                            token=admin_token.token,
+                            title="Mess Expiry Alert ⚠️",
+                            body=f"Items expiring within 15 days: {', '.join(list(expiring_names)[:3])}",
+                            data={"type": "inventory_alert"}
+                        )
+            except Exception as e:
+                logger.error(f"Error in mess expiry check: {e}")
             finally:
                 db.close()
                 

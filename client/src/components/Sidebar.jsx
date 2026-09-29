@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const ROLE_MENUS = {
-  SUPER_ADMIN:    ['dashboard', 'users', 'students', 'rooms', 'departments', 'leaves', 'vacate', 'gate', 'mess', 'mess_analytics', 'inventory', 'maintenance',  'notices', 'complaints', 'audit', 'lobby'],
+  SUPER_ADMIN:    ['dashboard', 'users', 'students', 'rooms', 'departments', 'leaves', 'vacate', 'gate', 'mess', 'mess_analytics', 'inventory', 'maintenance',  'notices', 'complaints', 'lobby', 'audit'],
   HOSTEL_ADMIN:   ['dashboard', 'students', 'rooms', 'vacate', 'mess_analytics', 'notices', 'complaints'],
   WARDEN:         ['dashboard', 'rooms', 'leaves', 'vacate', 'outside',  'notices', 'complaints'],
   TUTOR:          ['dashboard', 'leaves', 'outside', 'notices'],
@@ -36,7 +36,7 @@ const MENU_ITEMS = {
   vacate:       { label: 'Vacate Requests', icon: '🏠' },
   notices:      { label: 'Notices',        icon: '📢' },
   complaints:   { label: 'Complaints',     icon: '⚠️' },
-  audit:        { label: 'Audit Logs',     icon: '🔐' },
+  audit:        { label: 'Audit Logs',     icon: '🛡️' },
 };
 
 

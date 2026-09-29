@@ -16,6 +16,25 @@ export default function UsersPage() {
 
   const ROLES = ['SUPER_ADMIN', 'HOSTEL_ADMIN', 'WARDEN', 'TUTOR', 'HOD', 'PRINCIPAL', 'FOOD_ADMIN', 'MESS_WORKER', 'INVENTORY_ADMIN', 'MAINTENANCE', 'GATE_STAFF'];
 
+  const ROLE_CATEGORIES = [
+    {
+      name: 'Management', icon: '👑',
+      roles: [{ id: 'SUPER_ADMIN', name: 'Super Admin' }, { id: 'PRINCIPAL', name: 'Principal' }]
+    },
+    {
+      name: 'Hostel & Mess', icon: '🏠',
+      roles: [{ id: 'HOSTEL_ADMIN', name: 'Hostel Admin' }, { id: 'WARDEN', name: 'Warden' }, { id: 'FOOD_ADMIN', name: 'Food Admin' }, { id: 'MESS_WORKER', name: 'Mess Worker' }]
+    },
+    {
+      name: 'Academic', icon: '🏫',
+      roles: [{ id: 'HOD', name: 'Head of Dept' }, { id: 'TUTOR', name: 'Class Tutor' }]
+    },
+    {
+      name: 'Operations', icon: '⚙️',
+      roles: [{ id: 'INVENTORY_ADMIN', name: 'Inventory' }, { id: 'MAINTENANCE', name: 'Maintenance' }, { id: 'GATE_STAFF', name: 'Gate Staff' }]
+    }
+  ];
+
   useEffect(() => {
     fetchUsers();
     fetchConfig();
@@ -124,6 +143,29 @@ export default function UsersPage() {
         <div className="card" style={{ marginBottom: 24 }}>
           <h3 style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', fontSize: 16 }}>{editId ? '✏️ Edit User' : 'Create New User'}</h3>
           <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary)', marginBottom: 12 }}>1. Select Staff Category & Role *</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                {ROLE_CATEGORIES.map(cat => (
+                  <div key={cat.name} style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)', borderRadius: 12, padding: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>{cat.icon}</span> {cat.name}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {cat.roles.map(r => (
+                        <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: form.role === r.id ? 'rgba(99,102,241,0.1)' : 'transparent', border: form.role === r.id ? '1px solid var(--primary)' : '1px solid transparent', cursor: 'pointer', transition: 'all 0.2s' }}>
+                          <input type="radio" name="role" value={r.id} checked={form.role === r.id} onChange={e=>setForm({...form, role: e.target.value})} style={{ margin: 0, accentColor: 'var(--primary)' }} required />
+                          <span style={{ fontSize: 14, fontWeight: form.role === r.id ? 700 : 500, color: form.role === r.id ? 'var(--primary)' : 'var(--text)' }}>{r.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary)', marginTop: 8, marginBottom: -8 }}>2. Personal Details</div>
+            
             <div className="grid">
               <div className="form-group">
                 <label>Full Name *</label>
@@ -137,17 +179,12 @@ export default function UsersPage() {
 
             <div className="grid">
               <div className="form-group">
-                <label>Role *</label>
-                <select className="input" value={form.role} onChange={e=>setForm({...form, role: e.target.value})} required>
-                  <option value="">Select Role...</option>
-                  {ROLES.map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
                 <label>Phone Number *</label>
                 <input className="input" type="text" required pattern="[0-9]{10}" title="10 digit mobile number" value={form.phone} onChange={e=>setForm({...form, phone: e.target.value})} />
               </div>
             </div>
+
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary)', marginTop: 8, marginBottom: -8 }}>3. Assignments & Permissions</div>
 
 
             {(form.role === 'WARDEN' || form.role === 'TUTOR') && (

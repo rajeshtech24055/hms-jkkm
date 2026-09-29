@@ -138,6 +138,10 @@ def get_complaints(
     if role == "STUDENT":
         query = query.filter(Complaint.student_id == current_user["id"])
     else:
+        # Hide confidential complaints from WARDEN and HOSTEL_ADMIN
+        if role in ["WARDEN", "HOSTEL_ADMIN"]:
+            query = query.filter(Complaint.category != "confidential_grievance")
+
         if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
             query = query.filter(Student.institution_id == current_user["institution_id"])
         if role == "WARDEN" and current_user.get("gender"):
@@ -153,6 +157,10 @@ def get_complaints_stats(
     query = db.query(Complaint).join(Student, Complaint.student_id == Student.id)
     role = current_user["role"]
     
+    # Hide confidential complaints from WARDEN and HOSTEL_ADMIN
+    if role in ["WARDEN", "HOSTEL_ADMIN"]:
+        query = query.filter(Complaint.category != "confidential_grievance")
+
     if role not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id"):
         query = query.filter(Student.institution_id == current_user["institution_id"])
     if role == "WARDEN" and current_user.get("gender"):
@@ -168,21 +176,28 @@ def create_complaint(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    is_confidential = data.category == "confidential_grievance"
+    is_anonymous = 1 if is_confidential else (data.is_anonymous or 0)
+    student_name = "Anonymous" if is_anonymous else current_user["name"]
+
     c = Complaint(
         student_id=current_user["id"],
-        student_name="Anonymous" if data.is_anonymous else current_user["name"],
-        room_no=data.room_no,
+        student_name=student_name,
+        room_no=None if is_confidential else data.room_no,
         category=data.category,
         subject=data.subject,
         description=data.description,
-        is_anonymous=data.is_anonymous or 0,
+        is_anonymous=is_anonymous,
         status="open",
         created_at=datetime.utcnow().isoformat()
     )
     db.add(c)
     db.commit()
     
-    notify_role(db, "WARDEN", "New Complaint Filed", f"Category: {data.category} - {data.subject}", {"type": "complaint"})
+    if is_confidential:
+        notify_role(db, "SUPER_ADMIN", "Confidential Grievance Filed", f"Subject: {data.subject}", {"type": "complaint"})
+    else:
+        notify_role(db, "WARDEN", "New Complaint Filed", f"Category: {data.category} - {data.subject}", {"type": "complaint"})
     
     return {"id": c.id, "message": "Complaint submitted successfully"}
 

@@ -12,7 +12,7 @@ from app.utils.push import notify_role, notify_user
 router = APIRouter(prefix="/api/sos", tags=["SOS Emergency"])
 
 class SosCreate(BaseModel):
-    room_no: Optional[str] = None
+    room_no: Optional[str] = None 
 
 class SosStatusUpdate(BaseModel):
     status: str # 'ACKNOWLEDGED' | 'RESOLVED'

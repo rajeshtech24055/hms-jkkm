@@ -575,7 +575,7 @@ export default function InventoryPage() {
                   <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                     {(user?.role === 'SUPER_ADMIN' || user?.role === 'HOSTEL_ADMIN') && po.status === 'Pending' && (
                       <>
-                        <button className="btn btn-sm" style={{ background:'rgba(16,185,129,0.1)', color:'#10b981', border:'1px solid rgba(16,185,129,0.3)' }} onClick={() => handlePOAction(po, 'Approved', { approved_by: 'Principal' })}>✅ Approve</button>
+                        <button className="btn btn-sm" style={{ background:'rgba(16,185,129,0.1)', color:'#10b981', border:'1px solid rgba(16,185,129,0.3)' }} onClick={() => handlePOAction(po, 'Approved', { approved_by: user?.name || user?.username || 'Admin' })}>✅ Approve</button>
                         <button className="btn btn-sm" style={{ background:'rgba(239,68,68,0.1)', color:'#ef4444', border:'none' }} onClick={() => handlePOAction(po, 'Cancelled')}>✕ Reject</button>
                       </>
                     )}

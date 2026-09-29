@@ -13,14 +13,15 @@ const EMPTY_FORM = {
 };
 
 function ExpiryBadge({ item }) {
-  if (item.is_expired)    return <span className="badge badge-danger">⚠️ EXPIRED</span>;
-  if (item.expires_soon)  return <span className="badge badge-warning">⏰ Expires Soon</span>;
-  if (item.exp_date)      return <span className="badge badge-success">✅ OK</span>;
-  return <span style={{ color:'var(--text-dim)', fontSize:11 }}>—</span>;
+  if (item.is_expired) return <span className="badge badge-danger">⚠️ EXPIRED</span>;
+  if (item.expires_soon) return <span className="badge badge-warning">⏰ Expires Soon</span>;
+  if (item.exp_date) return <span className="badge badge-success">✅ OK</span>;
+  return <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>—</span>;
 }
 
 function daysUntilExpiry(exp_date) {
   if (!exp_date) return null;
+
   const diff = (new Date(exp_date) - new Date()) / 86400000;
   return Math.ceil(diff);
 }
@@ -37,19 +38,19 @@ export default function MessPage() {
   const [loading, setLoading] = useState(true);
 
   // Modals
-  const [showAddModal, setShowAddModal]     = useState(false);
-  const [showEditModal, setShowEditModal]   = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [showUsageModal, setShowUsageModal] = useState(false);
   const [showWastageModal, setShowWastageModal] = useState(false);
-  const [selectedItem, setSelectedItem]     = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   // Forms
-  const [form, setForm]             = useState(EMPTY_FORM);
-  const [restockForm, setRestockForm] = useState({ qty:'', batch_no:'', mfg_date:'', exp_date:'', unit_price:'' });
-  const [usageForm, setUsageForm]   = useState({ item_id:'', qty:'' });
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [restockForm, setRestockForm] = useState({ qty: '', batch_no: '', mfg_date: '', exp_date: '', unit_price: '' });
+  const [usageForm, setUsageForm] = useState({ item_id: '', qty: '' });
 
-  const isFoodAdmin = ['FOOD_ADMIN','SUPER_ADMIN','HOSTEL_ADMIN', 'MESS_MANAGER'].includes(user?.role);
+  const isFoodAdmin = ['FOOD_ADMIN', 'SUPER_ADMIN', 'HOSTEL_ADMIN', 'MESS_MANAGER'].includes(user?.role);
   const isMobileManager = user?.role === 'MESS_MANAGER';
 
   const fetchAll = async () => {
@@ -84,7 +85,7 @@ export default function MessPage() {
         reorder_qty: parseFloat(form.reorder_qty) || 0,
         unit_price: parseFloat(form.unit_price) || 0,
       };
-      await api('/api/mess_inventory', { method:'POST', body: JSON.stringify(payload) });
+      await api('/api/mess_inventory', { method: 'POST', body: JSON.stringify(payload) });
       setShowAddModal(false);
       setForm(EMPTY_FORM);
       fetchAll();
@@ -107,7 +108,7 @@ export default function MessPage() {
         reorder_qty: parseFloat(form.reorder_qty) || 0,
         unit_price: parseFloat(form.unit_price) || 0,
       };
-      await api(`/api/mess_inventory/${selectedItem.id}`, { method:'PUT', body: JSON.stringify(payload) });
+      await api(`/api/mess_inventory/${selectedItem.id}`, { method: 'PUT', body: JSON.stringify(payload) });
       setShowEditModal(false);
       fetchAll();
     } catch (err) { alert('Error: ' + err.message); }
@@ -116,7 +117,7 @@ export default function MessPage() {
   // ── Delete ────────────────────────────────────────────────────────────────────
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
-    await api(`/api/mess_inventory/${id}`, { method:'DELETE' });
+    await api(`/api/mess_inventory/${id}`, { method: 'DELETE' });
     fetchAll();
   };
 
@@ -124,13 +125,13 @@ export default function MessPage() {
   const openRestock = (item) => {
     setSelectedItem(item);
     setRestockForm({
-      qty: '', batch_no:'', mfg_date:'', exp_date:'', unit_price:'', bill_image: '',
+      qty: '', batch_no: '', mfg_date: '', exp_date: '', unit_price: '', bill_image: '',
       is_perishable: !!(item.mfg_date || item.exp_date || item.batch_no)
     });
     setShowRestockModal(true);
   };
 
-  
+
   const handleBillUploadRestock = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -144,7 +145,7 @@ export default function MessPage() {
   const handleRestock = async (e) => {
     e.preventDefault();
     try {
-      await api(`/api/mess_inventory/${selectedItem.id}/restock`, { method:'POST', body: JSON.stringify(restockForm) });
+      await api(`/api/mess_inventory/${selectedItem.id}/restock`, { method: 'POST', body: JSON.stringify(restockForm) });
       setShowRestockModal(false);
       fetchAll();
     } catch (err) { alert('Error: ' + err.message); }
@@ -154,9 +155,9 @@ export default function MessPage() {
   const handleUsage = async (e) => {
     e.preventDefault();
     try {
-      await api(`/api/mess_inventory/${usageForm.item_id}/use`, { method:'POST', body: JSON.stringify({ qty: parseFloat(usageForm.qty) }) });
+      await api(`/api/mess_inventory/${usageForm.item_id}/use`, { method: 'POST', body: JSON.stringify({ qty: parseFloat(usageForm.qty) }) });
       setShowUsageModal(false);
-      setUsageForm({ item_id:'', qty:'' });
+      setUsageForm({ item_id: '', qty: '' });
       fetchAll();
     } catch (err) { alert('Error: ' + err.message); }
   };
@@ -164,25 +165,34 @@ export default function MessPage() {
   const presentStudents = predictions.length > 0 ? predictions[0].present_students : 0;
   const alertCount = (expiryAlerts.expired?.length || 0) + (expiryAlerts.expiringSoon?.length || 0) + (expiryAlerts.lowStock?.length || 0);
 
-  
+
   // Flatten batches so they appear as separate rows
   const flattenedItems = [];
   if (items) {
     items.forEach(item => {
-      if (item.batches && item.batches.length > 0) {
-        item.batches.forEach((b, idx) => {
+      if (item.restocks && item.restocks.length > 0) {
+        // Main item row
+        flattenedItems.push({
+          ...item,
+          is_first_batch: true,
+          row_key: `${item.id}_main`,
+          master_item: item
+        });
+        // Sub rows for restocks
+        item.restocks.forEach((b, idx) => {
           flattenedItems.push({
             ...item,
             batch_id: b.id,
-            current_stock: b.qty_remaining,
+            current_stock: b.qty,
             batch_no: b.batch_no,
             mfg_date: b.mfg_date,
             exp_date: b.exp_date,
+            supplier: b.supplier,
             unit_price: b.unit_price,
-            is_expired: b.is_expired,
-            expires_soon: b.expires_soon,
-            is_first_batch: idx === 0,
-            row_key: `${item.id}_${b.id}`,
+            is_expired: b.exp_date && new Date(b.exp_date) < new Date(),
+            expires_soon: b.exp_date && daysUntilExpiry(b.exp_date) <= 15 && daysUntilExpiry(b.exp_date) >= 0,
+            is_first_batch: false,
+            row_key: `${item.id}_restock_${b.id}`,
             master_item: item
           });
         });
@@ -202,7 +212,7 @@ export default function MessPage() {
       {isMobileManager ? (
         <div style={{ padding: '16px', maxWidth: 480, margin: '0 auto', paddingBottom: 100 }}>
           <h2 style={{ fontSize: 26, marginBottom: 8 }}>👨‍🍳 Kitchen Manager</h2>
-          
+
           {/* Headcount Forecast */}
           <div className="card" style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', color: 'white', marginBottom: 24, border: 'none' }}>
             <div style={{ fontSize: 13, opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700, marginBottom: 8 }}>AI Headcount Forecast</div>
@@ -256,384 +266,386 @@ export default function MessPage() {
         </div>
       ) : (
         <div style={{ display: 'contents' }}>
-      {/* Header */}
-      <div className="section-header">
-        <div>
-          <h2 className="gradient-text" style={{ fontSize: 24, marginBottom: 4 }}>🍽️ Mess &amp; Grocery Management</h2>
-          <p style={{ color:'var(--text-muted)', fontSize:14, fontWeight: 500 }}>Common Kitchen · {presentStudents} students to feed today</p>
-        </div>
-        {isFoodAdmin && (
-          <div className="hide-mobile" style={{ display:'flex', gap:12 }}>
-            <button className="btn btn-ghost" style={{ background: 'var(--bg-card)' }} onClick={() => setShowUsageModal(true)}>📋 Log Usage</button>
-            <button className="btn btn-primary" onClick={() => { setForm(EMPTY_FORM); setShowAddModal(true); }}>➕ Add Mess Item</button>
-          </div>
-        )}
-      </div>
-
-      {/* Mobile Floating Action Button */}
-      {isFoodAdmin && (
-        <button 
-          className="btn btn-primary show-mobile" 
-          style={{ 
-            position: 'fixed', 
-            bottom: 80, 
-            right: 20, 
-            width: 56, 
-            height: 56, 
-            borderRadius: 28, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            boxShadow: '0 8px 24px rgba(37,99,235,0.4)',
-            zIndex: 100,
-            padding: 0
-          }}
-          onClick={() => { setForm(EMPTY_FORM); setShowAddModal(true); }}
-        >
-          <span style={{ fontSize: 24 }}>➕</span>
-        </button>
-      )}
-
-      {/* Expiry Banner */}
-      {alertCount > 0 && (
-        <div className={`alert ${(expiryAlerts.expired?.length || 0) > 0 ? 'alert-danger' : 'alert-warning'}`} style={{ padding: '16px 20px', borderRadius: '16px', marginBottom: 24, boxShadow: 'var(--shadow)', border: 'none', background: (expiryAlerts.expired?.length || 0) > 0 ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)' }}>
-          <span style={{ fontSize: 28 }}>{(expiryAlerts.expired?.length || 0) > 0 ? '🚨' : '⚠️'}</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4, color: (expiryAlerts.expired?.length || 0) > 0 ? 'var(--danger)' : 'var(--warning)' }}>
-              {(expiryAlerts.expired?.length || 0) > 0 ? `${(expiryAlerts.expired?.length || 0)} item(s) EXPIRED` : ''}
-              {expiryAlerts.expired && (expiryAlerts.expired?.length || 0) > 0 && (expiryAlerts.expiringSoon?.length || 0) > 0 ? ' · ' : ''}
-              {(expiryAlerts.expiringSoon?.length || 0) > 0 ? `${(expiryAlerts.expiringSoon?.length || 0)} item(s) expire within 7 days` : ''}
+          {/* Header */}
+          <div className="section-header">
+            <div>
+              <h2 className="gradient-text" style={{ fontSize: 24, marginBottom: 4 }}>🍽️ Mess &amp; Grocery Management</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: 14, fontWeight: 500 }}>Common Kitchen · {presentStudents} students to feed today</p>
             </div>
-            <div style={{ fontSize:13, opacity: 0.9, fontWeight: 500, color: 'var(--text)' }}>
-              {[...expiryAlerts.expired, ...expiryAlerts.expiringSoon].map(i => i.name).join(', ')}
+            {isFoodAdmin && (
+              <div className="hide-mobile" style={{ display: 'flex', gap: 12 }}>
+                <button className="btn btn-ghost" style={{ background: 'var(--bg-card)' }} onClick={() => setShowUsageModal(true)}>📋 Log Usage</button>
+                <button className="btn btn-primary" onClick={() => { setForm(EMPTY_FORM); setShowAddModal(true); }}>➕ Add Mess Item</button>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Floating Action Button */}
+          {isFoodAdmin && (
+            <button
+              className="btn btn-primary show-mobile"
+              style={{
+                position: 'fixed',
+                bottom: 80,
+                right: 20,
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 24px rgba(37,99,235,0.4)',
+                zIndex: 100,
+                padding: 0
+              }}
+              onClick={() => { setForm(EMPTY_FORM); setShowAddModal(true); }}
+            >
+              <span style={{ fontSize: 24 }}>➕</span>
+            </button>
+          )}
+
+          {/* Expiry Banner */}
+          {alertCount > 0 && (
+            <div className={`alert ${(expiryAlerts.expired?.length || 0) > 0 ? 'alert-danger' : 'alert-warning'}`} style={{ padding: '16px 20px', borderRadius: '16px', marginBottom: 24, boxShadow: 'var(--shadow)', border: 'none', background: (expiryAlerts.expired?.length || 0) > 0 ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)' }}>
+              <span style={{ fontSize: 28 }}>{(expiryAlerts.expired?.length || 0) > 0 ? '🚨' : '⚠️'}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4, color: (expiryAlerts.expired?.length || 0) > 0 ? 'var(--danger)' : 'var(--warning)' }}>
+                  {(expiryAlerts.expired?.length || 0) > 0 ? `${(expiryAlerts.expired?.length || 0)} item(s) EXPIRED` : ''}
+                  {expiryAlerts.expired && (expiryAlerts.expired?.length || 0) > 0 && (expiryAlerts.expiringSoon?.length || 0) > 0 ? ' · ' : ''}
+                  {(expiryAlerts.expiringSoon?.length || 0) > 0 ? `${(expiryAlerts.expiringSoon?.length || 0)} item(s) expire within 7 days` : ''}
+                </div>
+                <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500, color: 'var(--text)' }}>
+                  {[...expiryAlerts.expired, ...expiryAlerts.expiringSoon].map(i => i.name).join(', ')}
+                </div>
+              </div>
+              <button className="btn btn-sm" style={{ background: 'var(--bg-card)', border: 'none', color: 'inherit', fontWeight: 700, padding: '8px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }} onClick={() => setTab('alerts')}>View Alerts →</button>
             </div>
+          )}
+
+          {/* Tabs */}
+          <div className="tabs" style={{ maxWidth: 480, marginBottom: 24, padding: 6, borderRadius: 12, background: 'var(--bg-card)', boxShadow: 'var(--shadow)', border: '1px solid var(--border)' }}>
+            {[['items', '📦 Mess Items'], ['usage', '📋 Usage Log'], ['alerts', `🚨 Alerts${(expiryAlerts.expired?.length || 0) + (expiryAlerts.expiringSoon?.length || 0) + (expiryAlerts.lowStock?.length || 0) > 0 ? ` (${alertCount})` : ''}`]].map(([key, label]) => (
+              <div key={key} className={`tab ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)} style={{ padding: '10px 16px', borderRadius: 8, transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: tab === key ? 700 : 500, userSelect: 'none' }}>
+                {label}
+              </div>
+            ))}
           </div>
-          <button className="btn btn-sm" style={{ background: 'var(--bg-card)', border: 'none', color: 'inherit', fontWeight: 700, padding: '8px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }} onClick={() => setTab('alerts')}>View Alerts →</button>
-        </div>
-      )}
 
-      {/* Tabs */}
-      <div className="tabs" style={{ maxWidth: 480, marginBottom: 24, padding: 6, borderRadius: 12, background: 'var(--bg-card)', boxShadow: 'var(--shadow)', border: '1px solid var(--border)' }}>
-        {[['items','📦 Mess Items'],['usage','📋 Usage Log'],['alerts',`🚨 Alerts${(expiryAlerts.expired?.length || 0) + (expiryAlerts.expiringSoon?.length || 0) + (expiryAlerts.lowStock?.length || 0) > 0 ? ` (${alertCount})` : ''}`]].map(([key,label]) => (
-          <div key={key} className={`tab ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)} style={{ padding: '10px 16px', borderRadius: 8, transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: tab === key ? 700 : 500, userSelect: 'none' }}>
-            {label}
-          </div>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="loading"><div className="spinner" /></div>
-      ) : (
-        <>
-          {/* ── TAB: Items ─────────────────────────────────────────────────────── */}
-          {tab === 'items' && (
-            isMobileManager ? (
-               <div className="mobile-items-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-                 {items.length === 0 ? (
-                    <div style={{ textAlign:'center', padding:40, color:'var(--text-muted)', gridColumn: '1 / -1' }}>No grocery items found. Click "Add Mess Item" to get started.</div>
-                 ) : flattenedItems.map(item => (
-                   <div key={item.row_key} className="card" style={{ padding: '16px', background: item.is_expired ? 'rgba(239,68,68,0.06)' : item.expires_soon ? 'rgba(245,158,11,0.06)' : 'var(--bg-card)', borderLeft: item.is_expired ? '4px solid #ef4444' : item.expires_soon ? '4px solid #f59e0b' : '4px solid transparent' }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 8 }}>
-                         <div>
-                            <div style={{ fontWeight: item.is_first_batch ? 700 : 500, fontSize: 16 }}>{!item.is_first_batch && <span style={{ color: 'var(--border)' }}>↳ </span>}{item.name}</div>
-                            {item.batch_no && <div style={{ fontSize:12, color:'var(--text-dim)' }}>Batch: {item.batch_no}</div>}
-                         </div>
-                         {item.is_first_batch && <span className="badge badge-gray">{item.category}</span>}
-                      </div>
-                      
-                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom: 8, fontSize: 13 }}>
-                         <div>
-                           <div style={{ color:'var(--text-dim)' }}>Stock</div>
-                           <div style={{ fontWeight:700, fontSize:15 }}>{item.current_stock} <span style={{fontSize:11, color:'var(--text-muted)'}}>{item.unit}</span></div>
-                         </div>
-                         {item.unit_price && (
-                            <div style={{ textAlign:'right' }}>
-                              <div style={{ color:'var(--text-dim)' }}>Value</div>
-                              <div style={{ fontWeight:600 }}>₹{(item.unit_price * item.current_stock).toLocaleString('en-IN')}</div>
-                            </div>
-                         )}
-                      </div>
-
-                      {item.exp_date && (
-                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                            <div style={{ flex: 1 }}>
-                               <div style={{ fontSize:11, color:'var(--text-dim)', marginBottom:4 }}>Expires: {item.exp_date}</div>
-                               <ExpiryBadge item={item} />
-                            </div>
-                         </div>
-                      )}
-                      
-                      {isFoodAdmin && item.is_first_batch && (
-                         <div style={{ display:'flex', gap:8, marginTop: 16 }}>
-                            <button className="btn btn-sm" style={{ flex:1, background:'var(--surface-2)', color:'var(--success)' }} onClick={() => openRestock(item.master_item)}>📦 Restock</button>
-                            <button className="btn btn-sm" style={{ flex:1, background:'var(--surface-2)', color:'var(--warning)' }} onClick={() => { setSelectedItem(item.master_item); setUsageForm(f => ({ ...f, item_id: item.master_item.id })); setShowUsageModal(true); }}>📉 Log</button>
-                            <button className="btn btn-icon btn-ghost" style={{ background:'var(--bg-card2)' }} onClick={() => openEdit(item.master_item)}>✏️</button>
-                         </div>
-                      )}
-                   </div>
-                 ))}
-               </div>
-            ) : (
-            <div className="card" style={{ padding:0 }}>
-              <div className="table-wrap">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Item Name</th>
-                      <th>Batch No</th>
-                      <th>Category</th>
-                      <th>Stock</th>
-                      <th>Mfg. Date</th>
-                      <th>Exp. Date</th>
-                      <th>Expiry Status</th>
-                      <th>Supplier</th>
-                      <th>Unit Price</th>
-                      <th>Total Value</th>
-                      {isFoodAdmin && <th>Actions</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
+          {loading ? (
+            <div className="loading"><div className="spinner" /></div>
+          ) : (
+            <>
+              {/* ── TAB: Items ─────────────────────────────────────────────────────── */}
+              {tab === 'items' && (
+                isMobileManager ? (
+                  <div className="mobile-items-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
                     {items.length === 0 ? (
-                      <tr><td colSpan={10} style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>No grocery items found. Click "Add Mess Item" to get started.</td></tr>
-                      ) : flattenedItems.map(item => (
-                        <tr key={item.row_key} style={{ background: item.is_expired ? 'rgba(239,68,68,0.06)' : item.expires_soon ? 'rgba(245,158,11,0.06)' : undefined, borderBottom: !item.is_first_batch ? '1px dashed var(--border)' : undefined }}>
-                          <td>
-                            <div style={{ fontWeight: item.is_first_batch ? 600 : 400, color: item.is_first_batch ? 'inherit' : 'var(--text-muted)' }}>
-                              {!item.is_first_batch && <span style={{ color: 'var(--border)', marginRight: 6 }}>↳</span>}
-                              {item.name}
+                      <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', gridColumn: '1 / -1' }}>No grocery items found. Click "Add Mess Item" to get started.</div>
+                    ) : flattenedItems.map(item => (
+                      <div key={item.row_key} className="card" style={{ padding: '16px', background: item.is_expired ? 'rgba(239,68,68,0.06)' : item.expires_soon ? 'rgba(245,158,11,0.06)' : 'var(--bg-card)', borderLeft: item.is_expired ? '4px solid #ef4444' : item.expires_soon ? '4px solid #f59e0b' : '4px solid transparent' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                          <div>
+                            <div style={{ fontWeight: item.is_first_batch ? 700 : 500, fontSize: 16 }}>{!item.is_first_batch && <span style={{ color: 'var(--border)' }}>↳ </span>}{item.name}</div>
+                            {item.batch_no && <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>Batch: {item.batch_no}</div>}
+                          </div>
+                          {item.is_first_batch && <span className="badge badge-gray">{item.category}</span>}
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
+                          <div>
+                            <div style={{ color: 'var(--text-dim)' }}>Stock</div>
+                            <div style={{ fontWeight: 700, fontSize: 15 }}>{item.current_stock} <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.unit}</span></div>
+                          </div>
+                          {item.unit_price && (
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ color: 'var(--text-dim)' }}>Value</div>
+                              <div style={{ fontWeight: 600 }}>₹{(item.unit_price * item.current_stock).toLocaleString('en-IN')}</div>
                             </div>
-                          </td>
-                          <td style={{ fontSize:13, color:'var(--text-muted)' }}>{item.batch_no || '—'}</td>
-                          <td>{item.is_first_batch && <span className="badge badge-gray">{item.category}</span>}</td>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontWeight:800, fontSize: 14 }}>{item.current_stock}</span>
-                              <span style={{ fontSize:11, fontWeight:600, color: 'var(--text-dim)', background: 'var(--bg-card2)', padding: '2px 6px', borderRadius: 6 }}>{item.unit}</span>
-                              {item.is_first_batch && item.master_item.current_stock <= item.reorder_level && (
-                                <span style={{ fontSize:11, color:'var(--danger)', fontWeight: 700 }} title="Low Stock">⚠️</span>
-                              )}
-                            </div>
-                          </td>
-                          <td style={{ fontSize:13 }}>{item.mfg_date || '—'}</td>
-                          <td style={{ fontSize:13, fontWeight: item.is_expired||item.expires_soon ? 700 : 400, color: item.is_expired ? '#ef4444' : item.expires_soon ? '#f59e0b' : undefined }}>
-                            {item.exp_date ? item.exp_date : '—'}
-                          </td>
-                          <td>{item.exp_date ? <ExpiryBadge item={item} /> : '—'}</td>
-                          <td style={{ fontSize:12 }}>{item.supplier || '—'}</td>
-                          <td style={{ fontSize:13 }}>{item.unit_price ? `₹${item.unit_price}` : '—'}</td>
-                          <td style={{ fontSize:13, fontWeight:600 }}>{item.unit_price && item.current_stock ? '₹' + (item.unit_price * item.current_stock).toLocaleString('en-IN', { maximumFractionDigits:2 }) : '—'}</td>
-                          {isFoodAdmin && (
-                            <td>
-                              {item.is_first_batch && (
-                                <div style={{ display:'flex', gap:6, flexWrap:'nowrap' }}>
-                                  <button className="btn btn-sm btn-ghost" style={{ background: 'var(--bg-card2)', color: 'var(--success)' }} onClick={() => openRestock(item.master_item)}>📦 Restock</button>
-                                  <button className="btn btn-sm btn-ghost" style={{ background: 'var(--bg-card2)', color: 'var(--warning)' }} onClick={() => { setSelectedItem(item.master_item); setUsageForm(f => ({ ...f, item_id: item.master_item.id })); setShowUsageModal(true); }}>📉 Log</button>
-                                  <button className="btn btn-icon btn-ghost" style={{ background: 'var(--bg-card2)' }} onClick={() => openEdit(item.master_item)} title="Edit">✏️</button>
-                                  <button className="btn btn-icon btn-ghost" style={{ background: 'var(--bg-card2)', color: 'var(--danger)' }} onClick={() => handleDelete(item.master_item.id, item.master_item.name)} title="Delete">🗑️</button>
-                                </div>
-                              )}
-                            </td>
                           )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )
-          )}
+                        </div>
 
-          {/* ── TAB: Usage Log ──────────────────────────────────────────────────── */}
-          {tab === 'usage' && (
-            isMobileManager ? (
-               <div className="mobile-usage-grid" style={{ display: 'grid', gap: 12 }}>
-                 {usageLogs.length === 0 ? (
-                    <div style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>No usage logs yet.</div>
-                 ) : usageLogs.map(log => (
-                   <div key={log.id} className="card" style={{ padding: '16px' }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom: 6 }}>
-                         <div style={{ fontWeight:700, fontSize: 15 }}>{log.item_name}</div>
-                         <div style={{ fontSize:14, fontWeight:800, color:'var(--primary)' }}>{log.qty_used} {log.unit}</div>
+                        {item.exp_date && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>Expires: {item.exp_date}</div>
+                              <ExpiryBadge item={item} />
+                            </div>
+                          </div>
+                        )}
+
+                        {isFoodAdmin && item.is_first_batch && (
+                          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                            <button className="btn btn-sm" style={{ flex: 1, background: 'var(--surface-2)', color: 'var(--success)' }} onClick={() => openRestock(item.master_item)}>📦 Restock</button>
+                            <button className="btn btn-sm" style={{ flex: 1, background: 'var(--surface-2)', color: 'var(--warning)' }} onClick={() => { setSelectedItem(item.master_item); setUsageForm(f => ({ ...f, item_id: item.master_item.id })); setShowUsageModal(true); }}>📉 Log</button>
+                            <button className="btn btn-icon btn-ghost" style={{ background: 'var(--bg-card2)' }} onClick={() => openEdit(item.master_item)}>✏️</button>
+                          </div>
+                        )}
                       </div>
-                      <div style={{ display:'flex', justifyContent:'space-between', fontSize: 12, color:'var(--text-dim)' }}>
-                         <div>📅 {log.date}</div>
-                         <div>👤 {log.logged_by_name || '—'}</div>
-                      </div>
-                   </div>
-                 ))}
-               </div>
-            ) : (
-            <div className="card" style={{ padding:0 }}>
-              <div className="table-wrap">
-                <table className="table">
-                  <thead><tr><th>Item</th><th>Qty Used</th><th>Date</th><th>Logged By</th></tr></thead>
-                  <tbody>
-                    {usageLogs.length === 0 ? (
-                      <tr><td colSpan={4} style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>No usage logs yet.</td></tr>
-                    ) : usageLogs.map(log => (
-                      <tr key={log.id}>
-                        <td style={{ fontWeight:600 }}>{log.item_name}</td>
-                        <td>{log.qty_used} {log.unit}</td>
-                        <td>{log.date}</td>
-                        <td>{log.logged_by_name || '—'}</td>
-                      </tr>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            )
-          )}
+                  </div>
+                ) : (
+                  <div className="card" style={{ padding: 0 }}>
+                    <div className="table-wrap">
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th>Item Name</th>
+                            <th>Batch No</th>
+                            <th>Category</th>
+                            <th>Stock</th>
+                            <th>Mfg. Date</th>
+                            <th>Exp. Date</th>
+                            <th>Expiry Status</th>
+                            <th>Supplier</th>
+                            <th>Unit Price</th>
+                            <th>Total Value</th>
+                            {isFoodAdmin && <th>Actions</th>}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.length === 0 ? (
+                            <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No grocery items found. Click "Add Mess Item" to get started.</td></tr>
+                          ) : flattenedItems.map(item => (
+                            <tr key={item.row_key} style={{ background: item.is_expired ? 'rgba(239,68,68,0.06)' : item.expires_soon ? 'rgba(245,158,11,0.06)' : undefined, borderBottom: !item.is_first_batch ? '1px dashed var(--border)' : undefined }}>
+                              <td>
+                                <div style={{ fontWeight: item.is_first_batch ? 600 : 400, color: item.is_first_batch ? 'inherit' : 'var(--text-muted)' }}>
+                                  {!item.is_first_batch && <span style={{ color: 'var(--border)', marginRight: 6 }}>↳</span>}
+                                  {item.name}
+                                </div>
+                              </td>
+                              <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>{item.batch_no || '—'}</td>
+                              <td>{item.is_first_batch && <span className="badge badge-gray">{item.category}</span>}</td>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ fontWeight: 800, fontSize: 14 }}>{item.current_stock}</span>
+                                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', background: 'var(--bg-card2)', padding: '2px 6px', borderRadius: 6 }}>{item.unit}</span>
+                                  {item.is_first_batch && item.master_item.current_stock <= item.reorder_level && (
+                                    <span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 700 }} title="Low Stock">⚠️</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td style={{ fontSize: 13 }}>{item.mfg_date || '—'}</td>
+                              <td style={{ fontSize: 13, fontWeight: item.is_expired || item.expires_soon ? 700 : 400, color: item.is_expired ? '#ef4444' : item.expires_soon ? '#f59e0b' : undefined }}>
+                                {item.exp_date ? item.exp_date : '—'}
+                              </td>
+                              <td>{item.exp_date ? <ExpiryBadge item={item} /> : '—'}</td>
+                              <td style={{ fontSize: 12 }}>{item.supplier || '—'}</td>
+                              <td style={{ fontSize: 13 }}>{item.unit_price ? `₹${item.unit_price}` : '—'}</td>
+                              <td style={{ fontSize: 13, fontWeight: 600 }}>{item.unit_price && item.current_stock ? '₹' + (item.unit_price * item.current_stock).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—'}</td>
+                              {isFoodAdmin && (
+                                <td>
+                                  {item.is_first_batch && (
+                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
+                                      <button className="btn btn-sm btn-ghost" style={{ background: 'var(--bg-card2)', color: 'var(--success)' }} onClick={() => openRestock(item.master_item)}>📦 Restock</button>
+                                      <button className="btn btn-sm btn-ghost" style={{ background: 'var(--bg-card2)', color: 'var(--warning)' }} onClick={() => { setSelectedItem(item.master_item); setUsageForm(f => ({ ...f, item_id: item.master_item.id })); setShowUsageModal(true); }}>📉 Log</button>
+                                      <button className="btn btn-icon btn-ghost" style={{ background: 'var(--bg-card2)' }} onClick={() => openEdit(item.master_item)} title="Edit">✏️</button>
+                                      <button className="btn btn-icon btn-ghost" style={{ background: 'var(--bg-card2)', color: 'var(--danger)' }} onClick={() => handleDelete(item.master_item.id, item.master_item.name)} title="Delete">🗑️</button>
+                                    </div>
+                                  )}
+                                </td>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )
+              )}
 
-          {/* ── TAB: Expiry Alerts ──────────────────────────────────────────────── */}
-          {tab === 'alerts' && (
-            <div style={{ display:'grid', gap:16 }}>
-              {(!expiryAlerts.expired || (expiryAlerts.expired?.length || 0) === 0) && (!expiryAlerts.expiringSoon || (expiryAlerts.expiringSoon?.length || 0) === 0) && (!expiryAlerts.lowStock || expiryAlerts.lowStock.length === 0) ? (
-                <div className="card" style={{ padding:40, textAlign:'center' }}>
-                  <div style={{ fontSize:48 }}>✅</div>
-                  <p style={{ color:'var(--text-muted)', marginTop:8 }}>No expiry alerts! All items are within date.</p>
-                </div>
-              ) : (
-                <>
-                  {expiryAlerts.expired && (expiryAlerts.expired?.length || 0) > 0 && (
-                    <div>
-                      <h3 style={{ color:'#ef4444', marginBottom:10 }}>🚨 Expired Items ({(expiryAlerts.expired?.length || 0)})</h3>
-                      <div className="card" style={{ padding:0 }}>
-                        <div className="table-wrap">
-                          <table className="table">
-                            <thead><tr><th>Item</th><th>Batch</th><th>Exp. Date</th><th>Days Overdue</th><th>Stock</th>{isFoodAdmin && <th>Action</th>}</tr></thead>
-                            <tbody>
-                              {(expiryAlerts.expired || []).map(item => (
-                                <tr key={item.id} style={{ background:'rgba(239,68,68,0.06)' }}>
-                                  <td style={{ fontWeight:600 }}>{item.name}</td>
-                                  <td>{item.batch_no || '—'}</td>
-                                  <td style={{ color:'#ef4444', fontWeight:700 }}>{item.exp_date}</td>
-                                  <td style={{ color:'#ef4444' }}>{Math.abs(daysUntilExpiry(item.exp_date))} days</td>
-                                  <td>{item.current_stock} {item.unit}</td>
-                                  {isFoodAdmin && <td><button className="btn btn-sm btn-danger" onClick={() => handleDelete(item.id, item.name)}>🗑️ Remove</button></td>}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+              {/* ── TAB: Usage Log ──────────────────────────────────────────────────── */}
+              {tab === 'usage' && (
+                isMobileManager ? (
+                  <div className="mobile-usage-grid" style={{ display: 'grid', gap: 12 }}>
+                    {usageLogs.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No usage logs yet.</div>
+                    ) : usageLogs.map(log => (
+                      <div key={log.id} className="card" style={{ padding: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <div style={{ fontWeight: 700, fontSize: 15 }}>{log.item_name}</div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--primary)' }}>{log.qty_used} {log.unit}</div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-dim)' }}>
+                          <div>📅 {log.date}</div>
+                          <div>👤 {log.logged_by_name || '—'}</div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="card" style={{ padding: 0 }}>
+                    <div className="table-wrap">
+                      <table className="table">
+                        <thead><tr><th>Item</th><th>Qty Used</th><th>Date</th><th>Logged By</th></tr></thead>
+                        <tbody>
+                          {usageLogs.length === 0 ? (
+                            <tr><td colSpan={4} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No usage logs yet.</td></tr>
+                          ) : usageLogs.map(log => (
+                            <tr key={log.id}>
+                              <td style={{ fontWeight: 600 }}>{log.item_name}</td>
+                              <td>{log.qty_used} {log.unit}</td>
+                              <td>{log.date}</td>
+                              <td>{log.logged_by_name || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  )}
-                                      {expiryAlerts.lowStock && expiryAlerts.lowStock.length > 0 && (
-                      <div>
-                        <h3 style={{ color:'var(--danger)', marginBottom:10 }}>📉 Low Stock Items ({expiryAlerts.lowStock.length})</h3>
-                        <div className="card" style={{ padding:0 }}>
-                          <div className="table-wrap">
-                            <table className="table">
-                              <thead><tr><th>Item</th><th>Category</th><th>Current Stock</th><th>Limit</th>{isFoodAdmin && <th>Action</th>}</tr></thead>
-                              <tbody>
-                                {expiryAlerts.lowStock.map(item => (
-                                  <tr key={item.id} style={{ background:'rgba(239,68,68,0.06)' }}>
-                                    <td style={{ fontWeight:600 }}>{item.name}</td>
-                                    <td><span className="badge badge-gray">{item.category}</span></td>
-                                    <td style={{ color:'var(--danger)', fontWeight:700 }}>{item.current_stock} {item.unit}</td>
-                                    <td>{item.reorder_level} {item.unit}</td>
-                                    {isFoodAdmin && <td><button className="btn btn-sm" style={{ background:'var(--surface-2)', color: 'var(--success)' }} onClick={() => openRestock(item)}>📦 Restock</button></td>}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                  </div>
+                )
+              )}
+
+              {/* ── TAB: Expiry Alerts ──────────────────────────────────────────────── */}
+              {tab === 'alerts' && (
+                <div style={{ display: 'grid', gap: 16 }}>
+                  {(!expiryAlerts.expired || (expiryAlerts.expired?.length || 0) === 0) && (!expiryAlerts.expiringSoon || (expiryAlerts.expiringSoon?.length || 0) === 0) && (!expiryAlerts.lowStock || expiryAlerts.lowStock.length === 0) ? (
+                    <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+                      <div style={{ fontSize: 48 }}>✅</div>
+                      <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>No expiry alerts! All items are within date.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {expiryAlerts.expired && (expiryAlerts.expired?.length || 0) > 0 && (
+                        <div>
+                          <h3 style={{ color: '#ef4444', marginBottom: 10 }}>🚨 Expired Items ({(expiryAlerts.expired?.length || 0)})</h3>
+                          <div className="card" style={{ padding: 0 }}>
+                            <div className="table-wrap">
+                              <table className="table">
+                                <thead><tr><th>Item</th><th>Batch</th><th>Exp. Date</th><th>Days Overdue</th><th>Stock</th>{isFoodAdmin && <th>Action</th>}</tr></thead>
+                                <tbody>
+                                  {(expiryAlerts.expired || []).map(item => (
+                                    <tr key={item.id} style={{ background: 'rgba(239,68,68,0.06)' }}>
+                                      <td style={{ fontWeight: 600 }}>{item.name}</td>
+                                      <td>{item.batch_no || '—'}</td>
+                                      <td style={{ color: '#ef4444', fontWeight: 700 }}>{item.exp_date}</td>
+                                      <td style={{ color: '#ef4444' }}>{Math.abs(daysUntilExpiry(item.exp_date))} days</td>
+                                      <td>{item.current_stock} {item.unit}</td>
+                                      {isFoodAdmin && <td><button className="btn btn-sm btn-danger" onClick={() => handleDelete(item.id, item.name)}>🗑️ Remove</button></td>}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                    {expiryAlerts.expiringSoon && (expiryAlerts.expiringSoon?.length || 0) > 0 && (
-                    <div>
-                      <h3 style={{ color:'#f59e0b', marginBottom:10 }}>⏰ Expiring Within 7 Days ({(expiryAlerts.expiringSoon?.length || 0)})</h3>
-                      <div className="card" style={{ padding:0 }}>
-                        <div className="table-wrap">
-                          <table className="table">
-                            <thead><tr><th>Item</th><th>Batch</th><th>Exp. Date</th><th>Days Left</th><th>Stock</th>{isFoodAdmin && <th>Action</th>}</tr></thead>
-                            <tbody>
-                              {(expiryAlerts.expiringSoon || []).map(item => (
-                                <tr key={item.id} style={{ background:'rgba(245,158,11,0.06)' }}>
-                                  <td style={{ fontWeight:600 }}>{item.name}</td>
-                                  <td>{item.batch_no || '—'}</td>
-                                  <td style={{ color:'#f59e0b', fontWeight:700 }}>{item.exp_date}</td>
-                                  <td style={{ color:'#f59e0b' }}>{daysUntilExpiry(item.exp_date)} days</td>
-                                  <td>{item.current_stock} {item.unit}</td>
-                                  {isFoodAdmin && <td><button className="btn btn-sm" style={{ background:'var(--surface-2)' }} onClick={() => openEdit(item)}>✏️ Update</button></td>}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                      )}
+                      {expiryAlerts.lowStock && expiryAlerts.lowStock.length > 0 && (
+                        <div>
+                          <h3 style={{ color: 'var(--danger)', marginBottom: 10 }}>📉 Low Stock Items ({expiryAlerts.lowStock.length})</h3>
+                          <div className="card" style={{ padding: 0 }}>
+                            <div className="table-wrap">
+                              <table className="table">
+                                <thead><tr><th>Item</th><th>Category</th><th>Current Stock</th><th>Limit</th>{isFoodAdmin && <th>Action</th>}</tr></thead>
+                                <tbody>
+                                  {expiryAlerts.lowStock.map(item => (
+                                    <tr key={item.id} style={{ background: 'rgba(239,68,68,0.06)' }}>
+                                      <td style={{ fontWeight: 600 }}>{item.name}</td>
+                                      <td><span className="badge badge-gray">{item.category}</span></td>
+                                      <td style={{ color: 'var(--danger)', fontWeight: 700 }}>{item.current_stock} {item.unit}</td>
+                                      <td>{item.reorder_level} {item.unit}</td>
+                                      {isFoodAdmin && <td><button className="btn btn-sm" style={{ background: 'var(--surface-2)', color: 'var(--success)' }} onClick={() => openRestock(item)}>📦 Restock</button></td>}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      )}
+                      {expiryAlerts.expiringSoon && (expiryAlerts.expiringSoon?.length || 0) > 0 && (
+                        <div>
+                          <h3 style={{ color: '#f59e0b', marginBottom: 10 }}>⏰ Expiring Within 7 Days ({(expiryAlerts.expiringSoon?.length || 0)})</h3>
+                          <div className="card" style={{ padding: 0 }}>
+                            <div className="table-wrap">
+                              <table className="table">
+                                <thead><tr><th>Item</th><th>Batch</th><th>Exp. Date</th><th>Days Left</th><th>Stock</th>{isFoodAdmin && <th>Action</th>}</tr></thead>
+                                <tbody>
+                                  {(expiryAlerts.expiringSoon || []).map(item => (
+                                    <tr key={item.id} style={{ background: 'rgba(245,158,11,0.06)' }}>
+                                      <td style={{ fontWeight: 600 }}>{item.name}</td>
+                                      <td>{item.batch_no || '—'}</td>
+                                      <td style={{ color: '#f59e0b', fontWeight: 700 }}>{item.exp_date}</td>
+                                      <td style={{ color: '#f59e0b' }}>{daysUntilExpiry(item.exp_date)} days</td>
+                                      <td>{item.current_stock} {item.unit}</td>
+                                      {isFoodAdmin && <td><button className="btn btn-sm" style={{ background: 'var(--surface-2)' }} onClick={() => openEdit(item)}>✏️ Update</button></td>}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
-                </>
+                </div>
               )}
-            </div>
+            </>
           )}
-        </>
-      )}
-      </div>
+        </div>
       )}
 
       {/* ════ ADD GROCERY MODAL ════ */}
       {showAddModal && (
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="modal" style={{ maxWidth:560 }} onClick={e => e.stopPropagation()}>
+          <div className="modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <span className="modal-title">➕ Add Mess Item Item</span>
               <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
             </div>
             <form onSubmit={handleAdd}>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                <div className="form-group" style={{ gridColumn:'1/-1' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="form-group" style={{ gridColumn: '1/-1' }}>
                   <label className="form-label">Item Name *</label>
-                  <input className="form-input" required value={form.name} onChange={e => setForm(f => ({ ...f, name:e.target.value }))} placeholder="e.g. Rice (Ponni)" />
+                  <input className="form-input" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Rice (Ponni)" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Category</label>
-                  <select className="form-input" value={form.category} onChange={e => setForm(f => ({ ...f, category:e.target.value }))}>
+                  <select className="form-input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                     {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Unit</label>
-                  <select className="form-input" value={form.unit} onChange={e => setForm(f => ({ ...f, unit:e.target.value }))}>
+                  <select className="form-input" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
                     {UNITS.map(u => <option key={u}>{u}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Current Stock</label>
-                  <input type="number" step="0.1" className="form-input" value={form.current_stock} onChange={e => setForm(f => ({ ...f, current_stock:e.target.value }))} placeholder="0" />
+                  <input type="number" step="0.1" className="form-input" value={form.current_stock} onChange={e => setForm(f => ({ ...f, current_stock: e.target.value }))} placeholder="0" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Unit Price (₹)</label>
-                  <input type="number" step="0.01" className="form-input" value={form.unit_price} onChange={e => setForm(f => ({ ...f, unit_price:e.target.value }))} placeholder="0.00" />
+                  <input type="number" step="0.01" className="form-input" value={form.unit_price} onChange={e => setForm(f => ({ ...f, unit_price: e.target.value }))} placeholder="0.00" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Low Stock Threshold ({form.unit || 'units'}) *</label>
-                  <input type="number" step="0.1" className="form-input" value={form.reorder_level} onChange={e => setForm(f => ({ ...f, reorder_level:e.target.value }))} placeholder="e.g. 10 (triggers low stock warning)" />
-                  <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>⚠️ Triggers alert when stock &le; this level</div>
+                  <input type="number" step="0.1" className="form-input" value={form.reorder_level} onChange={e => setForm(f => ({ ...f, reorder_level: e.target.value }))} placeholder="e.g. 10 (triggers low stock warning)" />
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>⚠️ Triggers alert when stock &le; this level</div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Default Restock Qty</label>
-                  <input type="number" step="0.1" className="form-input" value={form.reorder_qty} onChange={e => setForm(f => ({ ...f, reorder_qty:e.target.value }))} placeholder="e.g. 50" />
+                  <input type="number" step="0.1" className="form-input" value={form.reorder_qty} onChange={e => setForm(f => ({ ...f, reorder_qty: e.target.value }))} placeholder="e.g. 50" />
                 </div>
                 {/* ── Perishable Toggle ── */}
-                <div className="form-group" style={{ gridColumn:'1/-1' }}>
-                  <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer', userSelect:'none',
+                <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                  <label style={{
+                    display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none',
                     background: form.is_perishable ? 'rgba(99,102,241,0.08)' : 'var(--surface-2)',
                     border: `1px solid ${form.is_perishable ? 'var(--primary)' : 'var(--border)'}`,
-                    borderRadius:8, padding:'10px 14px' }}>
+                    borderRadius: 8, padding: '10px 14px'
+                  }}>
                     <input type="checkbox" checked={form.is_perishable}
                       onChange={e => setForm(f => ({
                         ...f, is_perishable: e.target.checked,
                         // clear dates if unchecked
-                        ...(!e.target.checked ? { batch_no:'', mfg_date:'', exp_date:'' } : {})
+                        ...(!e.target.checked ? { batch_no: '', mfg_date: '', exp_date: '' } : {})
                       }))}
-                      style={{ width:16, height:16, accentColor:'var(--primary)' }} />
+                      style={{ width: 16, height: 16, accentColor: 'var(--primary)' }} />
                     <div>
-                      <div style={{ fontWeight:600, fontSize:14 }}>📦 This item has Manufacturing &amp; Expiry dates</div>
-                      <div style={{ fontSize:11, color:'var(--text-muted)' }}>Enable for packaged goods, dairy, oil, spices, etc. Not needed for fresh vegetables, firewood, etc.</div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>📦 This item has Manufacturing &amp; Expiry dates</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Enable for packaged goods, dairy, oil, spices, etc. Not needed for fresh vegetables, firewood, etc.</div>
                     </div>
                   </label>
                 </div>
@@ -641,31 +653,31 @@ export default function MessPage() {
                 {/* ── Date fields — only shown when perishable ── */}
                 {form.is_perishable && (
                   <>
-                    <div className="form-group" style={{ gridColumn:'1/-1' }}>
-                      <label className="form-label">Batch / Lot No. <span style={{ color:'var(--text-dim)', fontWeight:400 }}>(optional)</span></label>
-                      <input className="form-input" value={form.batch_no} onChange={e => setForm(f => ({ ...f, batch_no:e.target.value }))} placeholder="e.g. LOT-2026-08-A" />
+                    <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                      <label className="form-label">Batch / Lot No. <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
+                      <input className="form-input" value={form.batch_no} onChange={e => setForm(f => ({ ...f, batch_no: e.target.value }))} placeholder="e.g. LOT-2026-08-A" />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">🏭 Manufacturing Date <span style={{ color:'var(--text-dim)', fontWeight:400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={form.mfg_date} onChange={e => setForm(f => ({ ...f, mfg_date:e.target.value }))} />
+                      <label className="form-label">🏭 Manufacturing Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
+                      <input type="date" className="form-input" value={form.mfg_date} onChange={e => setForm(f => ({ ...f, mfg_date: e.target.value }))} />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">📅 Expiry Date <span style={{ color:'var(--text-dim)', fontWeight:400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={form.exp_date} onChange={e => setForm(f => ({ ...f, exp_date:e.target.value }))} />
+                      <label className="form-label">📅 Expiry Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
+                      <input type="date" className="form-input" value={form.exp_date} onChange={e => setForm(f => ({ ...f, exp_date: e.target.value }))} />
                       {form.mfg_date && form.exp_date && new Date(form.exp_date) <= new Date(form.mfg_date) && (
-                        <div style={{ color:'#ef4444', fontSize:11, marginTop:4 }}>⚠️ Expiry must be after manufacturing date</div>
+                        <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>⚠️ Expiry must be after manufacturing date</div>
                       )}
                     </div>
                   </>
                 )}
 
-                <div className="form-group" style={{ gridColumn:'1/-1' }}>
+                <div className="form-group" style={{ gridColumn: '1/-1' }}>
                   <label className="form-label">Supplier</label>
-                  <input className="form-input" value={form.supplier} onChange={e => setForm(f => ({ ...f, supplier:e.target.value }))} placeholder="e.g. Sri Murugan Traders" />
+                  <input className="form-input" value={form.supplier} onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))} placeholder="e.g. Sri Murugan Traders" />
                 </div>
               </div>
-              <div style={{ display:'flex', gap:10, marginTop:20 }}>
-                <button type="submit" className="btn btn-primary" style={{ flex:1 }}>✅ Add Item</button>
+              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>✅ Add Item</button>
                 <button type="button" className="btn btn-ghost" onClick={() => setShowAddModal(false)}>Cancel</button>
               </div>
             </form>
@@ -676,92 +688,94 @@ export default function MessPage() {
       {/* ════ EDIT GROCERY MODAL ════ */}
       {showEditModal && selectedItem && (
         <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-          <div className="modal" style={{ maxWidth:560 }} onClick={e => e.stopPropagation()}>
+          <div className="modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <span className="modal-title">✏️ Edit: {selectedItem.name}</span>
               <button className="modal-close" onClick={() => setShowEditModal(false)}>✕</button>
             </div>
             <form onSubmit={handleEdit}>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                <div className="form-group" style={{ gridColumn:'1/-1' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="form-group" style={{ gridColumn: '1/-1' }}>
                   <label className="form-label">Item Name *</label>
-                  <input className="form-input" required value={form.name} onChange={e => setForm(f => ({ ...f, name:e.target.value }))} />
+                  <input className="form-input" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Category</label>
-                  <select className="form-input" value={form.category} onChange={e => setForm(f => ({ ...f, category:e.target.value }))}>
+                  <select className="form-input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                     {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Unit</label>
-                  <select className="form-input" value={form.unit} onChange={e => setForm(f => ({ ...f, unit:e.target.value }))}>
+                  <select className="form-input" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
                     {UNITS.map(u => <option key={u}>{u}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Current Stock</label>
-                  <input type="number" step="0.1" className="form-input" value={form.current_stock} onChange={e => setForm(f => ({ ...f, current_stock:e.target.value }))} />
+                  <input type="number" step="0.1" className="form-input" value={form.current_stock} onChange={e => setForm(f => ({ ...f, current_stock: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Unit Price (₹)</label>
-                  <input type="number" step="0.01" className="form-input" value={form.unit_price} onChange={e => setForm(f => ({ ...f, unit_price:e.target.value }))} />
+                  <input type="number" step="0.01" className="form-input" value={form.unit_price} onChange={e => setForm(f => ({ ...f, unit_price: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Low Stock Threshold ({form.unit || 'units'}) *</label>
-                  <input type="number" step="0.1" className="form-input" value={form.reorder_level} onChange={e => setForm(f => ({ ...f, reorder_level:e.target.value }))} placeholder="e.g. 10" />
-                  <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>⚠️ Triggers alert when stock &le; this level</div>
+                  <input type="number" step="0.1" className="form-input" value={form.reorder_level} onChange={e => setForm(f => ({ ...f, reorder_level: e.target.value }))} placeholder="e.g. 10" />
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>⚠️ Triggers alert when stock &le; this level</div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Default Restock Qty</label>
-                  <input type="number" step="0.1" className="form-input" value={form.reorder_qty} onChange={e => setForm(f => ({ ...f, reorder_qty:e.target.value }))} />
+                  <input type="number" step="0.1" className="form-input" value={form.reorder_qty} onChange={e => setForm(f => ({ ...f, reorder_qty: e.target.value }))} />
                 </div>
                 {/* ── Perishable Toggle (Edit) ── */}
-                <div className="form-group" style={{ gridColumn:'1/-1' }}>
-                  <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer', userSelect:'none',
+                <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                  <label style={{
+                    display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none',
                     background: form.is_perishable ? 'rgba(99,102,241,0.08)' : 'var(--surface-2)',
                     border: `1px solid ${form.is_perishable ? 'var(--primary)' : 'var(--border)'}`,
-                    borderRadius:8, padding:'10px 14px' }}>
+                    borderRadius: 8, padding: '10px 14px'
+                  }}>
                     <input type="checkbox" checked={!!form.is_perishable}
                       onChange={e => setForm(f => ({
                         ...f, is_perishable: e.target.checked,
-                        ...(!e.target.checked ? { batch_no:'', mfg_date:'', exp_date:'' } : {})
+                        ...(!e.target.checked ? { batch_no: '', mfg_date: '', exp_date: '' } : {})
                       }))}
-                      style={{ width:16, height:16, accentColor:'var(--primary)' }} />
+                      style={{ width: 16, height: 16, accentColor: 'var(--primary)' }} />
                     <div>
-                      <div style={{ fontWeight:600, fontSize:14 }}>📦 This item has Manufacturing &amp; Expiry dates</div>
-                      <div style={{ fontSize:11, color:'var(--text-muted)' }}>Enable for packaged goods, dairy, oil, spices, etc.</div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>📦 This item has Manufacturing &amp; Expiry dates</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Enable for packaged goods, dairy, oil, spices, etc.</div>
                     </div>
                   </label>
                 </div>
 
                 {form.is_perishable && (
                   <>
-                    <div className="form-group" style={{ gridColumn:'1/-1' }}>
-                      <label className="form-label">Batch / Lot No. <span style={{ color:'var(--text-dim)', fontWeight:400 }}>(optional)</span></label>
-                      <input className="form-input" value={form.batch_no||''} onChange={e => setForm(f => ({ ...f, batch_no:e.target.value }))} />
+                    <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                      <label className="form-label">Batch / Lot No. <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
+                      <input className="form-input" value={form.batch_no || ''} onChange={e => setForm(f => ({ ...f, batch_no: e.target.value }))} />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">🏭 Manufacturing Date <span style={{ color:'var(--text-dim)', fontWeight:400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={form.mfg_date||''} onChange={e => setForm(f => ({ ...f, mfg_date:e.target.value }))} />
+                      <label className="form-label">🏭 Manufacturing Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
+                      <input type="date" className="form-input" value={form.mfg_date || ''} onChange={e => setForm(f => ({ ...f, mfg_date: e.target.value }))} />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">📅 Expiry Date <span style={{ color:'var(--text-dim)', fontWeight:400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={form.exp_date||''} onChange={e => setForm(f => ({ ...f, exp_date:e.target.value }))} />
+                      <label className="form-label">📅 Expiry Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
+                      <input type="date" className="form-input" value={form.exp_date || ''} onChange={e => setForm(f => ({ ...f, exp_date: e.target.value }))} />
                       {form.mfg_date && form.exp_date && new Date(form.exp_date) <= new Date(form.mfg_date) && (
-                        <div style={{ color:'#ef4444', fontSize:11, marginTop:4 }}>⚠️ Expiry must be after manufacturing date</div>
+                        <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>⚠️ Expiry must be after manufacturing date</div>
                       )}
                     </div>
                   </>
                 )}
 
-                <div className="form-group" style={{ gridColumn:'1/-1' }}>
+                <div className="form-group" style={{ gridColumn: '1/-1' }}>
                   <label className="form-label">Supplier</label>
-                  <input className="form-input" value={form.supplier||''} onChange={e => setForm(f => ({ ...f, supplier:e.target.value }))} />
+                  <input className="form-input" value={form.supplier || ''} onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))} />
                 </div>
               </div>
-              <div style={{ display:'flex', gap:10, marginTop:20 }}>
-                <button type="submit" className="btn btn-primary" style={{ flex:1 }}>💾 Save Changes</button>
+              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>💾 Save Changes</button>
                 <button type="button" className="btn btn-ghost" onClick={() => setShowEditModal(false)}>Cancel</button>
               </div>
             </form>
@@ -772,68 +786,70 @@ export default function MessPage() {
       {/* ════ RESTOCK MODAL ════ */}
       {showRestockModal && selectedItem && (
         <div className="modal-overlay" onClick={() => setShowRestockModal(false)}>
-          <div className="modal" style={{ maxWidth:440 }} onClick={e => e.stopPropagation()}>
+          <div className="modal" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <span className="modal-title">📥 Restock: {selectedItem.name}</span>
               <button className="modal-close" onClick={() => setShowRestockModal(false)}>✕</button>
             </div>
-            <div style={{ padding:'8px 0 16px', color:'var(--text-muted)', fontSize:13 }}>
+            <div style={{ padding: '8px 0 16px', color: 'var(--text-muted)', fontSize: 13 }}>
               Current Stock: <strong>{selectedItem.current_stock} {selectedItem.unit}</strong>
             </div>
             <form onSubmit={handleRestock}>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                <div className="form-group" style={{ gridColumn:'1/-1' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="form-group" style={{ gridColumn: '1/-1' }}>
                   <label className="form-label">Quantity to Add *</label>
-                  <input type="number" step="0.1" className="form-input" required value={restockForm.qty} onChange={e => setRestockForm(f => ({ ...f, qty:e.target.value }))} placeholder={`in ${selectedItem.unit}`} />
+                  <input type="number" step="0.1" className="form-input" required value={restockForm.qty} onChange={e => setRestockForm(f => ({ ...f, qty: e.target.value }))} placeholder={`in ${selectedItem.unit}`} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Unit Price (₹)</label>
-                  <input type="number" step="0.01" className="form-input" value={restockForm.unit_price} onChange={e => setRestockForm(f => ({ ...f, unit_price:e.target.value }))} placeholder="Per unit cost" />
+                  <input type="number" step="0.01" className="form-input" value={restockForm.unit_price} onChange={e => setRestockForm(f => ({ ...f, unit_price: e.target.value }))} placeholder="Per unit cost" />
                 </div>
-                <div className="form-group" style={{ gridColumn:'1/-1' }}>
-                  <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer', userSelect:'none',
+                <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                  <label style={{
+                    display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none',
                     background: restockForm.is_perishable ? 'rgba(99,102,241,0.08)' : 'var(--surface-2)',
                     border: `1px solid ${restockForm.is_perishable ? 'var(--primary)' : 'var(--border)'}`,
-                    borderRadius:8, padding:'10px 14px' }}>
+                    borderRadius: 8, padding: '10px 14px'
+                  }}>
                     <input type="checkbox" checked={!!restockForm.is_perishable}
                       onChange={e => setRestockForm(f => ({
                         ...f, is_perishable: e.target.checked,
-                        ...(!e.target.checked ? { batch_no:'', mfg_date:'', exp_date:'' } : {})
+                        ...(!e.target.checked ? { batch_no: '', mfg_date: '', exp_date: '' } : {})
                       }))}
-                      style={{ width:16, height:16, accentColor:'var(--primary)' }} />
+                      style={{ width: 16, height: 16, accentColor: 'var(--primary)' }} />
                     <div>
-                      <div style={{ fontWeight:600, fontSize:14 }}>📦 Update batch / expiry dates for this delivery</div>
-                      <div style={{ fontSize:11, color:'var(--text-muted)' }}>Check if the new stock has a different batch or expiry date</div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>📦 Update batch / expiry dates for this delivery</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Check if the new stock has a different batch or expiry date</div>
                     </div>
                   </label>
                 </div>
 
                 {restockForm.is_perishable && (
                   <>
-                    <div className="form-group" style={{ gridColumn:'1/-1' }}>
-                      <label className="form-label">Batch / Lot No. <span style={{ color:'var(--text-dim)', fontWeight:400 }}>(optional)</span></label>
-                      <input className="form-input" value={restockForm.batch_no} onChange={e => setRestockForm(f => ({ ...f, batch_no:e.target.value }))} placeholder="e.g. LOT-2026-09-B" />
+                    <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                      <label className="form-label">Batch / Lot No. <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
+                      <input className="form-input" value={restockForm.batch_no} onChange={e => setRestockForm(f => ({ ...f, batch_no: e.target.value }))} placeholder="e.g. LOT-2026-09-B" />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">🏭 Manufacturing Date <span style={{ color:'var(--text-dim)', fontWeight:400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={restockForm.mfg_date} onChange={e => setRestockForm(f => ({ ...f, mfg_date:e.target.value }))} />
+                      <label className="form-label">🏭 Manufacturing Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
+                      <input type="date" className="form-input" value={restockForm.mfg_date} onChange={e => setRestockForm(f => ({ ...f, mfg_date: e.target.value }))} />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">📅 Expiry Date <span style={{ color:'var(--text-dim)', fontWeight:400 }}>(optional)</span></label>
-                      <input type="date" className="form-input" value={restockForm.exp_date} onChange={e => setRestockForm(f => ({ ...f, exp_date:e.target.value }))} />
+                      <label className="form-label">📅 Expiry Date <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(optional)</span></label>
+                      <input type="date" className="form-input" value={restockForm.exp_date} onChange={e => setRestockForm(f => ({ ...f, exp_date: e.target.value }))} />
                     </div>
                   </>
                 )}
               </div>
               {restockForm.is_perishable && restockForm.mfg_date && restockForm.exp_date && new Date(restockForm.exp_date) <= new Date(restockForm.mfg_date) && (
-                <div style={{ background:'rgba(239,68,68,0.1)', border:'1px solid #ef4444', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#ef4444', marginTop:8 }}>
+                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#ef4444', marginTop: 8 }}>
                   ⚠️ Expiry date must be after manufacturing date!
                 </div>
               )}
 
               {/* Bill Upload */}
-              <div style={{ marginTop:16, padding:'14px 16px', background:'rgba(99,102,241,0.06)', border:'1px solid rgba(99,102,241,0.2)', borderRadius:10 }}>
-                <label className="form-label" style={{ fontWeight:600, marginBottom:8, display:'block' }}>📎 Upload Physical Bill / Invoice</label>
+              <div style={{ marginTop: 16, padding: '14px 16px', background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 10 }}>
+                <label className="form-label" style={{ fontWeight: 600, marginBottom: 8, display: 'block' }}>📎 Upload Physical Bill / Invoice</label>
                 <input
                   type="file"
                   accept="image/*,application/pdf"
@@ -841,16 +857,16 @@ export default function MessPage() {
                   onChange={handleBillUploadRestock}
                 />
                 {restockForm.bill_image
-                  ? <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:8 }}>
-                      <span style={{ color:'#10b981', fontWeight:700, fontSize:13 }}>✅ Bill attached</span>
-                      <a href={restockForm.bill_image} target="_blank" rel="noreferrer" style={{ fontSize:12, color:'var(--primary)' }}>Preview</a>
-                    </div>
-                  : <small style={{ color:'var(--text-muted)', marginTop:6, display:'block' }}>Optional — attach the shop receipt/bill for this purchase</small>
+                  ? <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: '#10b981', fontWeight: 700, fontSize: 13 }}>✅ Bill attached</span>
+                    <a href={restockForm.bill_image} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--primary)' }}>Preview</a>
+                  </div>
+                  : <small style={{ color: 'var(--text-muted)', marginTop: 6, display: 'block' }}>Optional — attach the shop receipt/bill for this purchase</small>
                 }
               </div>
 
-              <div style={{ display:'flex', gap:10, marginTop:20 }}>
-                <button type="submit" className="btn btn-success" style={{ flex:1 }}>📥 Confirm Restock</button>
+              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                <button type="submit" className="btn btn-success" style={{ flex: 1 }}>📥 Confirm Restock</button>
                 <button type="button" className="btn btn-ghost" onClick={() => setShowRestockModal(false)}>Cancel</button>
               </div>
             </form>
@@ -869,17 +885,17 @@ export default function MessPage() {
             <form onSubmit={handleUsage}>
               <div className="form-group">
                 <label className="form-label">Select Item *</label>
-                <select className="form-input" required value={usageForm.item_id} onChange={e => setUsageForm(f => ({ ...f, item_id:e.target.value }))}>
+                <select className="form-input" required value={usageForm.item_id} onChange={e => setUsageForm(f => ({ ...f, item_id: e.target.value }))}>
                   <option value="">-- Select Item --</option>
                   {items.map(i => <option key={i.id} value={i.id}>{i.name} (Stock: {i.current_stock} {i.unit})</option>)}
                 </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Quantity Used *</label>
-                <input type="number" step="0.1" className="form-input" required value={usageForm.qty} onChange={e => setUsageForm(f => ({ ...f, qty:e.target.value }))} placeholder="e.g. 15.5" />
+                <input type="number" step="0.1" className="form-input" required value={usageForm.qty} onChange={e => setUsageForm(f => ({ ...f, qty: e.target.value }))} placeholder="e.g. 15.5" />
               </div>
-              <div style={{ display:'flex', gap:10, marginTop:20 }}>
-                <button type="submit" className="btn btn-primary" style={{ flex:1 }}>💾 Save Usage</button>
+              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>💾 Save Usage</button>
                 <button type="button" className="btn btn-ghost" onClick={() => setShowUsageModal(false)}>Cancel</button>
               </div>
             </form>

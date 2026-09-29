@@ -19,9 +19,9 @@ import MyLeavePage from './pages/MyLeavePage';
 import ComplaintsPage from './pages/ComplaintsPage';
 import VacatePage from './pages/VacatePage';
 import DepartmentsPage from './pages/DepartmentsPage';
-import AuditLogPage from './pages/AuditLogPage';
 import LobbyDisplay from './pages/LobbyDisplay';
 import UsersPage from './pages/UsersPage';
+import AuditLogPage from './pages/AuditLogPage';
 import ChatbotBubble from './components/ChatbotBubble';
 import { io } from 'socket.io-client';
 
@@ -46,12 +46,12 @@ const PAGE_META = {
   vacate:         { label: 'Vacate Requests',    icon: '🏠', component: VacatePage },
   notices:        { label: 'Notices',            icon: '📢', component: NoticesPage },
   complaints:     { label: 'Complaints',         icon: '⚠️', component: ComplaintsPage },
-  audit:          { label: 'Audit Logs',         icon: '🔐', component: AuditLogPage },
+  audit:          { label: 'Audit Logs',         icon: '🛡️', component: AuditLogPage },
 };
 
 // All accessible pages per role
 const ROLE_PAGES = {
-  SUPER_ADMIN:     ['dashboard','users','students','rooms','departments','leaves','vacate','gate','outside','mess','mess_analytics','menu','inventory','maintenance','notices','complaints','audit','lobby'],
+  SUPER_ADMIN:     ['dashboard','users','students','rooms','departments','leaves','vacate','gate','outside','mess','mess_analytics','menu','inventory','maintenance','notices','complaints','lobby','audit'],
   HOSTEL_ADMIN:    ['dashboard','students','rooms','departments','vacate','outside','mess_analytics','notices','complaints'],
   WARDEN:          ['dashboard','students','rooms','leaves','vacate','outside','notices','complaints'],
   TUTOR:           ['dashboard','students','leaves','outside','notices'],
@@ -383,7 +383,7 @@ function MainLayout() {
       )}
 
       {/* Chatbot (Student only) */}
-      <ChatbotBubble />
+      {user?.role === 'STUDENT' && <ChatbotBubble />}
 
       {/* Global Search (Ctrl+K) */}
       {searchOpen && (

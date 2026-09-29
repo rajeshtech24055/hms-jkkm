@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const CATEGORIES = [
-  { value: 'ragging',        label: '🚨 Ragging',        color: '#ef4444' },
-  { value: 'cleanliness',    label: '🧹 Cleanliness',     color: '#f59e0b' },
-  { value: 'noise',          label: '🔊 Noise',           color: '#8b5cf6' },
-  { value: 'facilities',     label: '🏗️ Facilities',      color: '#3b82f6' },
-  { value: 'food',           label: '🍽️ Food Quality',    color: '#10b981' },
-  { value: 'staff_behavior', label: '👤 Staff Behavior',  color: '#ec4899' },
-  { value: 'other',          label: '📝 Other',           color: '#6b7280' },
+  { value: 'ragging',                label: '🚨 Ragging',                           color: '#ef4444' },
+  { value: 'cleanliness',            label: '🧹 Cleanliness',                        color: '#f59e0b' },
+  { value: 'noise',                  label: '🔊 Noise',                              color: '#8b5cf6' },
+  { value: 'facilities',             label: '🏗️ Facilities',                         color: '#3b82f6' },
+  { value: 'food',                   label: '🍽️ Food Quality',                       color: '#10b981' },
+  { value: 'staff_behavior',         label: '👤 Staff Behavior',                     color: '#ec4899' },
+  { value: 'confidential_grievance', label: '🤐 Confidential Grievance (Staff/Admin)', color: '#111827' },
+  { value: 'other',                  label: '📝 Other',                              color: '#6b7280' },
 ];
 
 const STATUS_BADGES = {
@@ -81,7 +82,7 @@ export default function ComplaintsPage() {
     } catch (err) { alert('Error: ' + err.message); }
   };
 
-  const getCat      = (val) => CATEGORIES.find(c => c.value === val) || CATEGORIES[6];
+  const getCat      = (val) => CATEGORIES.find(c => c.value === val) || CATEGORIES.find(c => c.value === 'other');
   const timeSince   = (d) => { const h = Math.floor((Date.now() - new Date(d)) / 3600000); return h < 1 ? 'Just now' : h < 24 ? `${h}h ago` : `${Math.floor(h/24)}d ago`; };
 
   return (
@@ -206,6 +207,11 @@ export default function ComplaintsPage() {
                   🚨 <strong>Ragging is a serious offence.</strong> This will be marked <strong>CRITICAL</strong> and immediately escalated to Admin and Warden.
                 </div>
               )}
+              {form.category === 'confidential_grievance' && (
+                <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(17,24,39,0.1)', border: '1px solid rgba(17,24,39,0.4)', fontSize: 12, color: '#111827', marginBottom: 12 }}>
+                  🤐 <strong>Strictly Confidential.</strong> This complaint is completely hidden from Wardens and Hostel Admins. It is sent directly to the Principal and Top Management. Your identity and room number will be forced to be anonymous.
+                </div>
+              )}
               <div className="form-group">
                 <label className="form-label">Subject *</label>
                 <input className="form-input" required value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder="Brief title of your complaint" />
@@ -215,11 +221,11 @@ export default function ComplaintsPage() {
                 <textarea className="form-input" required rows={4} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the issue in detail — date, time, location, people involved…" />
               </div>
               <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
-                  <input type="checkbox" checked={form.is_anonymous} onChange={e => setForm(f => ({ ...f, is_anonymous: e.target.checked }))} style={{ width: 16, height: 16 }} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: form.category === 'confidential_grievance' ? 'not-allowed' : 'pointer', userSelect: 'none', opacity: form.category === 'confidential_grievance' ? 0.6 : 1 }}>
+                  <input type="checkbox" checked={form.category === 'confidential_grievance' || form.is_anonymous} disabled={form.category === 'confidential_grievance'} onChange={e => setForm(f => ({ ...f, is_anonymous: e.target.checked }))} style={{ width: 16, height: 16 }} />
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>🕵️ Submit Anonymously</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Your name and room will be hidden from all staff</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{form.category === 'confidential_grievance' ? 'Forced to true for Confidential Grievances' : 'Your name and room will be hidden from all staff'}</div>
                   </div>
                 </label>
               </div>

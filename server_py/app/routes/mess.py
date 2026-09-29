@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 from app.database import get_db
 from app.dependencies import get_current_user, require_roles
 from app.models.models import (
-    MessItem, MessUsageLog, MessMealsServed, MessFoodWastage, WeeklyMenu, MessFeedback
+    MessItem, MessUsageLog, MessMealsServed, MessFoodWastage, WeeklyMenu, MessFeedback, MessRestockLog
 )
 
 router = APIRouter(prefix="/api/mess_inventory", tags=["Mess Inventory ERP"])
@@ -57,7 +57,7 @@ def get_mess_items(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    items = db.query(MessItem).all()
+    items = db.query(MessItem).options(joinedload(MessItem.restocks)).all()
     return items
 
 @router.post("")
@@ -134,6 +134,7 @@ class MessRestock(BaseModel):
     batch_no: Optional[str] = None
     mfg_date: Optional[str] = None
     exp_date: Optional[str] = None
+    supplier: Optional[str] = None
     bill_image: Optional[str] = None
 
 class MessUse(BaseModel):
@@ -154,8 +155,21 @@ def restock_mess_item(
     if data.unit_price is not None:
         item.unit_price = data.unit_price
         
+    # Create restock log
+    log = MessRestockLog(
+        item_id=item_id,
+        qty=data.qty,
+        unit_price=data.unit_price or 0.0,
+        batch_no=data.batch_no,
+        mfg_date=data.mfg_date,
+        exp_date=data.exp_date,
+        supplier=data.supplier,
+        created_at=datetime.utcnow().isoformat()
+    )
+    db.add(log)
     db.commit()
-    return {"success": True, "message": "Restocked successfully", "new_stock": item.current_stock}
+    db.refresh(item)
+    return {"success": True, "message": "Restocked successfully", "new_stock": item.current_stock, "restock_id": log.id}
 
 @router.post("/{item_id}/use")
 def use_mess_item(

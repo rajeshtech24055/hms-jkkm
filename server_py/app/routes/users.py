@@ -7,6 +7,7 @@ from app.database import get_db
 from app.security import get_password_hash
 from app.dependencies import get_current_user, require_roles
 from app.models.models import User, Student, Institution, Department
+from app.routes.audit import log_audit
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
 
@@ -32,7 +33,7 @@ def fix_all_passwords_prod(db: Session = Depends(get_db)):
             try:
                 parts = student.dob.split("-")
                 if len(parts) == 3:
-                    pwd = parts[1] + parts[2] + parts[0]
+                    pwd = parts[2] + parts[1] + parts[0]
                     u.password_hash = get_password_hash(pwd)
                     fixed_students += 1
                 else:
@@ -49,7 +50,7 @@ def fix_all_passwords_prod(db: Session = Depends(get_db)):
         "fixed_students": fixed_students,
         "skipped_students_no_dob": skipped_students,
         "staff_password": "admin123",
-        "student_password_format": "MMDDYYYY"
+        "student_password_format": "DDMMYYYY"
     }
 
 @router.get("/debug-users")
@@ -188,6 +189,8 @@ def create_user(
     db.add(user)
     db.commit()
     db.refresh(user)
+    
+    log_audit(db, current_user["id"], "CREATE", "User", f"Created {user.role} user: {user.name}")
     return {"id": user.id, "message": "User created successfully"}
 
 @router.put("/{user_id}")
@@ -213,6 +216,7 @@ def update_user(
     user.phone = data.phone
     
     db.commit()
+    log_audit(db, current_user["id"], "UPDATE", "User", f"Updated details for user ID {user.id}")
     return {"success": True, "message": "User updated successfully"}
 
 @router.delete("/{user_id}")
@@ -227,4 +231,5 @@ def delete_user(
         
     db.delete(user)
     db.commit()
+    log_audit(db, current_user["id"], "DELETE", "User", f"Deleted user ID {user_id}")
     return {"success": True, "message": "User deleted"}

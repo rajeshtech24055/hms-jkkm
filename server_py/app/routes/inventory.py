@@ -50,6 +50,8 @@ class POCreate(BaseModel):
 
 class POUpdate(BaseModel):
     status: str
+    approved_by: Optional[str] = None
+    received_qty: Optional[float] = None
 
 @router.get("")
 def get_assets(
@@ -296,7 +298,7 @@ def create_po(
 def update_po_status(
     id: int,
     data: POUpdate,
-    current_user: dict = Depends(require_roles("SUPER_ADMIN", "INVENTORY_ADMIN")),
+    current_user: dict = Depends(require_roles("SUPER_ADMIN", "INVENTORY_ADMIN", "HOSTEL_ADMIN")),
     db: Session = Depends(get_db)
 ):
     po = db.query(PurchaseOrder).filter(PurchaseOrder.id == id).first()
@@ -304,5 +306,10 @@ def update_po_status(
         raise HTTPException(status_code=404, detail="PO not found")
         
     po.status = data.status
+    if data.approved_by:
+        po.approved_by = data.approved_by
+    if data.received_qty is not None:
+        po.received_qty = data.received_qty
+        
     db.commit()
     return {"success": True, "message": f"PO Status updated to {data.status}"}
