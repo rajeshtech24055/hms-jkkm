@@ -52,7 +52,7 @@ const TABS = [
 ];
 
 export default function InventoryPage() {
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const [tab, setTab]           = useState('items');
   const [items, setItems]       = useState([]);
   const [stats, setStats]       = useState({});
