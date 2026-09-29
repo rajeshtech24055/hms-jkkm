@@ -150,6 +150,15 @@ function MainLayout() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  React.useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => { window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); };
+  }, []);
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
@@ -352,6 +361,14 @@ function MainLayout() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div style={{ position:'fixed',top:0,left:0,right:0,zIndex:10000,background:'#ef4444',color:'white',padding:'10px 20px',display:'flex',alignItems:'center',justifyContent:'center',gap:10,fontWeight:700,fontSize:14,boxShadow:'0 2px 12px rgba(0,0,0,0.3)',animation:'slideIn 0.3s ease-out' }}>
+          <span style={{ fontSize:20 }}>📵</span>
+          <span>No Internet Connection — Please check your Wi-Fi or mobile data.</span>
         </div>
       )}
 
