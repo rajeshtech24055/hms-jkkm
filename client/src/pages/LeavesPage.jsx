@@ -24,7 +24,8 @@ export default function LeavesPage() {
     }
     // Simple filter simulation
     api(`/api/leaves?${params}`)
-      .then(data => {
+      .then(res => {
+        const data = res.data || res;
         // Filter based on role scope and level in a real app, here we do simple client filtering for demo
         let filtered = data;
         if (user.role === 'WARDEN') {

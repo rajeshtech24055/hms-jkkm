@@ -79,6 +79,8 @@ class ApprovalDecision(BaseModel):
 @router.get("")
 def get_leaves(
     status: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -104,7 +106,8 @@ def get_leaves(
         from app.dependencies import apply_role_filters
         query = apply_role_filters(query, current_user, Student)
 
-    results = query.order_by(LeaveApplication.id.desc()).all()
+    total_count = query.count()
+    results = query.order_by(LeaveApplication.id.desc()).offset(skip).limit(limit).all()
     output = []
     for r in results:
         leave, name, reg_no, gender, year, dept_name, inst_code = r
@@ -132,8 +135,12 @@ def get_leaves(
                 for a in approvals
             ]
         })
-    return output
-
+    return {
+        "data": output,
+        "total": total_count,
+        "skip": skip,
+        "limit": limit
+    }
 
 @router.post("")
 def apply_leave(

@@ -36,7 +36,8 @@ export default function MyLeavePage() {
       if (student) {
         setStudent(student);
         const leaveData = await api('/api/leaves');
-        const myLeaves = leaveData.filter(l => l.student_id === student.id);
+        const leaveDataArray = Array.isArray(leaveData) ? leaveData : (leaveData.data || []);
+        const myLeaves = leaveDataArray.filter(l => l.student_id === student.id);
         setLeaves(myLeaves);
       }
     } catch (err) {
