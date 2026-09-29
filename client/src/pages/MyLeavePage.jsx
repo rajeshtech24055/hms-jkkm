@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { fmtDate, fmtDateTime } from '../utils/dateUtils';
 
 export default function MyLeavePage() {
   const { api, user } = useAuth();
@@ -156,9 +159,9 @@ export default function MyLeavePage() {
                 <tbody>
                   {leaves.map(l => (
                     <tr key={l.id}>
-                      <td style={{ color: 'var(--text-dim)' }}>{new Date(l.created_at).toLocaleDateString('en-IN')}</td>
+                      <td style={{ color: 'var(--text-dim)' }}>{fmtDate(l.created_at)}</td>
                       <td style={{ fontWeight: 600 }}>
-                        {new Date(l.from_dt).toLocaleDateString('en-IN')} — {new Date(l.to_dt).toLocaleDateString('en-IN')}
+                        {fmtDate(l.from_dt)} — {fmtDate(l.to_dt)}
                       </td>
                       <td>{l.reason}</td>
                       <td>
@@ -216,7 +219,7 @@ export default function MyLeavePage() {
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 15 }}>Vacate Request</div>
                         <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 2 }}>
-                          Applied: {new Date(r.created_at).toLocaleDateString('en-IN')} &nbsp;|&nbsp; Intended Date: {r.vacate_date}
+                          Applied: {fmtDate(r.created_at)} &nbsp;|&nbsp; Intended Date: {fmtDate(r.vacate_date)}
                         </div>
                       </div>
                       <span className={`badge ${statusInfo.cls}`}>{statusInfo.icon} {statusInfo.label}</span>
@@ -264,11 +267,11 @@ export default function MyLeavePage() {
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">From (Date & Time)</label>
-                  <input type="datetime-local" className="form-input" required value={newLeave.from_dt} onChange={e => setNewLeave({...newLeave, from_dt: e.target.value})} />
+                  <DatePicker className="form-input" showTimeSelect timeFormat="HH:mm" timeIntervals={15} dateFormat="dd-MM-yyyy HH:mm" selected={newLeave.from_dt ? new Date(newLeave.from_dt) : null} onChange={d => setNewLeave({...newLeave, from_dt: d ? d.toISOString() : ''})} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">To (Date & Time)</label>
-                  <input type="datetime-local" className="form-input" required value={newLeave.to_dt} onChange={e => setNewLeave({...newLeave, to_dt: e.target.value})} />
+                  <DatePicker className="form-input" showTimeSelect timeFormat="HH:mm" timeIntervals={15} dateFormat="dd-MM-yyyy HH:mm" selected={newLeave.to_dt ? new Date(newLeave.to_dt) : null} onChange={d => setNewLeave({...newLeave, to_dt: d ? d.toISOString() : ''})} />
                 </div>
               </div>
               <div className="form-grid">
@@ -319,7 +322,7 @@ export default function MyLeavePage() {
               </div>
               <div className="form-group">
                 <label className="form-label">Intended Vacate Date *</label>
-                <input type="date" className="form-input" required min={new Date().toISOString().split('T')[0]} value={newVacate.vacate_date} onChange={e => setNewVacate({...newVacate, vacate_date: e.target.value})} />
+                <DatePicker className="form-input" dateFormat="dd-MM-yyyy" minDate={new Date()} selected={newVacate.vacate_date ? new Date(newVacate.vacate_date) : null} onChange={d => setNewVacate({...newVacate, vacate_date: d ? d.toISOString().split('T')[0] : ''})} />
               </div>
               <div className="form-group">
                 <label className="form-label">Parent/Guardian Phone (for confirmation)</label>
@@ -357,10 +360,10 @@ export default function MyLeavePage() {
                   <span style={{ color: '#64748b' }}>Destination:</span> <strong>{showPassModal.place}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ color: '#64748b' }}>Out:</span> <strong>{new Date(showPassModal.from_dt).toLocaleString('en-IN')}</strong>
+                  <span style={{ color: '#64748b' }}>Out:</span> <strong>{fmtDateTime(showPassModal.from_dt)}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>In:</span> <strong>{new Date(showPassModal.to_dt).toLocaleString('en-IN')}</strong>
+                  <span style={{ color: '#64748b' }}>In:</span> <strong>{fmtDateTime(showPassModal.to_dt)}</strong>
                 </div>
               </div>
 
