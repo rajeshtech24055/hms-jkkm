@@ -403,7 +403,7 @@ class PurchaseOrder(Base):
 class StudentChatMessage(Base):
     __tablename__ = "student_chat_messages"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    student_id = Column(Integer, ForeignKey("users.id"))
+    student_id = Column(Integer, ForeignKey("students.id"))
     role = Column(String, nullable=False) # 'user' or 'model'
     content = Column(Text, nullable=False)
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
