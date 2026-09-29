@@ -8,14 +8,15 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.models import StudentChatMessage, User, LeaveApplication, MessItem
 from app.dependencies import get_current_user
-import google.generativeai as genai
+from openai import OpenAI
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
-# Initialize Gemini
-api_key = os.getenv("GEMINI_API_KEY")
-if api_key:
-    genai.configure(api_key=api_key)
+# Initialize Groq Client
+client = OpenAI(
+    api_key=os.getenv("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1",
+)
 
 class ChatMessageCreate(BaseModel):
     message: str
@@ -24,7 +25,7 @@ def get_student_info(db: Session, student_id: int):
     student = db.query(User).filter(User.id == student_id).first()
     return student
 
-# --- Define Tools (Functions) for Gemini ---
+# --- Define Tools (Functions) for Grok ---
 def get_leave_status(db: Session, student_id: int) -> str:
     leaves = db.query(LeaveApplication).filter(LeaveApplication.student_id == student_id).order_by(LeaveApplication.id.desc()).limit(3).all()
     if not leaves:
@@ -55,10 +56,7 @@ def apply_for_leave(db: Session, student_id: int, reason: str, start_date: str, 
         return f"Failed to apply for leave: {str(e)}"
 
 # A simple mapping to route function names to python functions
-def execute_tool(tool_call, db: Session, student_id: int):
-    name = tool_call.name
-    args = tool_call.args
-    
+def execute_tool(name: str, args: dict, db: Session, student_id: int):
     if name == "get_leave_status":
         return get_leave_status(db, student_id)
     elif name == "get_weekly_menu":
@@ -80,7 +78,8 @@ def get_chat_history(
         StudentChatMessage.student_id == current_user["id"]
     ).order_by(StudentChatMessage.id.asc()).all()
     
-    return [{"role": m.role, "content": m.content, "created_at": m.created_at} for m in messages]
+    # We map 'assistant' or 'model' (for backward compatibility) to 'model' for frontend
+    return [{"role": m.role if m.role != "assistant" else "model", "content": m.content, "created_at": m.created_at} for m in messages]
 
 @router.post("")
 def send_chat_message(
@@ -91,7 +90,7 @@ def send_chat_message(
     if current_user["role"].upper() != "STUDENT":
         raise HTTPException(status_code=403, detail="Only students can access this chatbot.")
         
-    if not api_key:
+    if not os.getenv("GROQ_API_KEY"):
         raise HTTPException(status_code=500, detail="Chatbot API key not configured.")
 
     student_id = current_user["id"]
@@ -101,83 +100,107 @@ def send_chat_message(
     db.add(user_msg)
     db.commit()
 
-    # Retrieve history to give Gemini context
+    # Load academic calendar
+    calendar_text = ""
+    cal_path = os.path.join(os.path.dirname(__file__), "..", "data", "academic_calendar.txt")
+    if os.path.exists(cal_path):
+        with open(cal_path, "r", encoding="utf-8") as f:
+            calendar_text = f.read()
+
+    sys_instr = (
+        "You are a helpful hostel assistant for a student. "
+        "You can answer questions about the menu, check leave status, and apply for leaves on their behalf.\n"
+        f"Here is the Academic Calendar for reference:\n{calendar_text}\n"
+    )
+
+    # Format history for Grok (OpenAI format)
     history = db.query(StudentChatMessage).filter(
         StudentChatMessage.student_id == student_id
     ).order_by(StudentChatMessage.id.asc()).all()
     
-    # Format history for Gemini
-    formatted_history = []
-    for h in history[:-1]: # exclude the one we just saved
-        formatted_history.append({"role": h.role, "parts": [h.content]})
+    formatted_history = [{"role": "system", "content": sys_instr}]
+    
+    # Add previous messages
+    for h in history[:-1]:
+        # map old 'model' role to 'assistant'
+        role = "assistant" if h.role == "model" else h.role
+        formatted_history.append({"role": role, "content": h.content})
         
-    # Tools definition for Gemini
+    # Add the new message
+    formatted_history.append({"role": "user", "content": data.message})
+
+    # Tools definition for Grok
     tools = [
         {
-            "name": "get_leave_status",
-            "description": "Check the status of the student's recent leave applications.",
-            "parameters": {"type": "OBJECT", "properties": {}}
+            "type": "function",
+            "function": {
+                "name": "get_leave_status",
+                "description": "Check the status of the student's recent leave applications.",
+            }
         },
         {
-            "name": "get_weekly_menu",
-            "description": "Get the weekly food menu for the mess/canteen.",
-            "parameters": {"type": "OBJECT", "properties": {}}
+            "type": "function",
+            "function": {
+                "name": "get_weekly_menu",
+                "description": "Get the weekly food menu for the mess/canteen.",
+            }
         },
         {
-            "name": "apply_for_leave",
-            "description": "Submit a leave application for the student.",
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "reason": {"type": "STRING", "description": "Reason for leave"},
-                    "start_date": {"type": "STRING", "description": "Start date in YYYY-MM-DD format"},
-                    "end_date": {"type": "STRING", "description": "End date in YYYY-MM-DD format"}
-                },
-                "required": ["reason", "start_date", "end_date"]
+            "type": "function",
+            "function": {
+                "name": "apply_for_leave",
+                "description": "Submit a leave application for the student.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "reason": {"type": "string", "description": "Reason for leave"},
+                        "start_date": {"type": "string", "description": "Start date in YYYY-MM-DD format"},
+                        "end_date": {"type": "string", "description": "End date in YYYY-MM-DD format"}
+                    },
+                    "required": ["reason", "start_date", "end_date"]
+                }
             }
         }
     ]
 
     try:
-        # Load academic calendar
-        calendar_text = ""
-        cal_path = os.path.join(os.path.dirname(__file__), "..", "data", "academic_calendar.txt")
-        if os.path.exists(cal_path):
-            with open(cal_path, "r", encoding="utf-8") as f:
-                calendar_text = f.read()
-
-        sys_instr = (
-            "You are a helpful hostel assistant for a student. "
-            "You can answer questions about the menu, check leave status, and apply for leaves on their behalf.\n"
-            f"Here is the Academic Calendar for reference:\n{calendar_text}\n"
-        )
-
-        model = genai.GenerativeModel(
-            model_name="gemini-flash-latest",
+        # Call Groq API
+        response = client.chat.completions.create(
+            model="llama-3.1-70b-versatile",
+            messages=formatted_history,
             tools=tools,
-            system_instruction=sys_instr
+            temperature=0.7
         )
-        chat = model.start_chat(history=formatted_history)
-        response = chat.send_message(data.message)
 
-        # Handle tool calls if any
-        if response.candidates and response.candidates[0].content.parts:
-            for part in response.candidates[0].content.parts:
-                if hasattr(part, 'function_call') and part.function_call:
-                    fc = part.function_call
-                    tool_result = execute_tool(fc, db, student_id)
-                    # Send tool result back to model using protos (compatible with older sdk versions)
-                    from google.ai.generativelanguage import Content, Part, FunctionResponse
-                    fn_response_part = Part(
-                        function_response=FunctionResponse(
-                            name=fc.name,
-                            response={"result": tool_result}
-                        )
-                    )
-                    response = chat.send_message(Content(parts=[fn_response_part], role="user"))
+        message = response.choices[0].message
+        
+        # Handle tool calls
+        if getattr(message, 'tool_calls', None):
+            formatted_history.append(message) # Append assistant's tool call request
+            
+            for tool_call in message.tool_calls:
+                fn_name = tool_call.function.name
+                fn_args = json.loads(tool_call.function.arguments)
+                
+                tool_result = execute_tool(fn_name, fn_args, db, student_id)
+                
+                formatted_history.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "name": fn_name,
+                    "content": str(tool_result)
+                })
+                
+            # Send results back to Groq to get the final text response
+            second_response = client.chat.completions.create(
+                model="llama-3.1-70b-versatile",
+                messages=formatted_history
+            )
+            final_text = second_response.choices[0].message.content
+        else:
+            final_text = message.content
 
-        final_text = response.text
-
+        # Save assistant message to DB
         bot_msg = StudentChatMessage(student_id=student_id, role="model", content=final_text)
         db.add(bot_msg)
         db.commit()
@@ -185,7 +208,7 @@ def send_chat_message(
         return {"role": "model", "content": final_text}
 
     except Exception as e:
-        print("Chatbot Error:", e)
+        print(f"Groq API Error: {e}")
         err_msg = "Sorry, I am having trouble connecting to my brain right now. Please try again in a moment."
         db.add(StudentChatMessage(student_id=student_id, role="model", content=err_msg))
         db.commit()

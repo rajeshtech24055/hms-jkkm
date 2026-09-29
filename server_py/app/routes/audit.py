@@ -19,13 +19,17 @@ def log_audit(db: Session, user_id: int, action: str, entity: str, details: str,
 
 @router.get("")
 def get_audit_logs(
+    skip: int = 0,
+    limit: int = 50,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     if current_user["role"] != "SUPER_ADMIN":
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).all()
+    query = db.query(AuditLog)
+    total_count = query.count()
+    logs = query.order_by(AuditLog.timestamp.desc()).offset(skip).limit(limit).all()
     
     result = []
     for log in logs:
@@ -43,4 +47,9 @@ def get_audit_logs(
             "timestamp": log.timestamp
         })
         
-    return result
+    return {
+        "data": result,
+        "total": total_count,
+        "skip": skip,
+        "limit": limit
+    }

@@ -112,6 +112,8 @@ class UserUpdate(BaseModel):
 @router.get("")
 def get_users(
     role: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -120,8 +122,7 @@ def get_users(
         Institution.name.label("institution_name"),
         Department.name.label("dept_name")
     ).outerjoin(Institution, User.institution_id == Institution.id)\
-     .outerjoin(Department, User.dept_id == Department.id)\
-     .order_by(User.id.asc())
+     .outerjoin(Department, User.dept_id == Department.id)
 
     if role:
         query = query.filter(User.role == role)
@@ -129,7 +130,9 @@ def get_users(
         # Exclude STUDENT role — students are managed separately in the Students page
         query = query.filter(User.role != "STUDENT")
 
-    users = query.all()
+    total_count = query.count()
+    users = query.order_by(User.id.asc()).offset(skip).limit(limit).all()
+    
     output = []
     for u in users:
         usr, inst_name, dept_name = u
@@ -147,7 +150,13 @@ def get_users(
             "phone": usr.phone,
             "active": usr.active
         })
-    return output
+        
+    return {
+        "data": output,
+        "total": total_count,
+        "skip": skip,
+        "limit": limit
+    }
 
 @router.get("/staff")
 def get_staff_users(

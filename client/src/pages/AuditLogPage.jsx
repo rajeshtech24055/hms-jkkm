@@ -5,16 +5,22 @@ export default function AuditLogPage() {
   const { api } = useAuth();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 50;
 
   useEffect(() => {
-    fetchLogs();
+    fetchLogs(1);
   }, []);
 
-  const fetchLogs = async () => {
+  const fetchLogs = async (pageToFetch = page) => {
     setLoading(true);
     try {
-      const data = await api('/api/audit-logs');
-      setLogs(data);
+      const skip = (pageToFetch - 1) * limit;
+      const res = await api(`/api/audit-logs?skip=${skip}&limit=${limit}`);
+      setLogs(res.data);
+      setTotal(res.total);
+      setPage(pageToFetch);
     } catch (e) {
       alert("Failed to fetch audit logs: " + e.message);
     } finally {
@@ -29,7 +35,7 @@ export default function AuditLogPage() {
           <h2>🛡️ System Audit Logs</h2>
           <p style={{ color: 'var(--text-muted)' }}>Detailed tracking of system actions (Super Admin only)</p>
         </div>
-        <button className="btn btn-secondary" onClick={fetchLogs}>🔄 Refresh</button>
+        <button className="btn btn-secondary" onClick={() => fetchLogs(1)}>🔄 Refresh</button>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -70,6 +76,22 @@ export default function AuditLogPage() {
             )}
           </tbody>
         </table>
+        
+        {!loading && total > 0 && (
+          <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} logs
+            </span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-sm" disabled={page === 1} onClick={() => fetchLogs(page - 1)}>
+                Previous
+              </button>
+              <button className="btn btn-sm" disabled={page * limit >= total} onClick={() => fetchLogs(page + 1)}>
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

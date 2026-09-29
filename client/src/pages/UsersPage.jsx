@@ -7,6 +7,9 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 50;
   
   const [institutions, setInstitutions] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -40,12 +43,15 @@ export default function UsersPage() {
     fetchConfig();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (pageToFetch = page) => {
     setLoading(true);
     try {
-      const data = await api('/api/users');
+      const skip = (pageToFetch - 1) * limit;
+      const res = await api(`/api/users?skip=${skip}&limit=${limit}`);
       // Students are managed on the Students page — exclude them from Staff & Users
-      setUsers(data.filter(u => u.role !== 'STUDENT'));
+      setUsers(res.data.filter(u => u.role !== 'STUDENT'));
+      setTotal(res.total);
+      setPage(pageToFetch);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -301,6 +307,22 @@ export default function UsersPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        
+        {!loading && total > 0 && (
+          <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} users
+            </span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-sm" disabled={page === 1} onClick={() => fetchUsers(page - 1)}>
+                Previous
+              </button>
+              <button className="btn btn-sm" disabled={page * limit >= total} onClick={() => fetchUsers(page + 1)}>
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

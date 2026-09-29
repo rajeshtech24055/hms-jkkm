@@ -81,6 +81,8 @@ def get_students(
     gender: Optional[str] = None,
     year: Optional[str] = None,
     active: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -113,7 +115,8 @@ def get_students(
     # Apply shared RBAC filters (Institution, Dept, Year, Gender)
     query = apply_role_filters(query, current_user, Student)
 
-    results = query.all()
+    total_count = query.count()
+    results = query.offset(skip).limit(limit).all()
     output = []
     for r in results:
         student, inst_name, inst_code, dept_name, room_no, block = r
@@ -166,7 +169,12 @@ def get_students(
             "is_overdue": is_overdue
         }
         output.append(s_dict)
-    return output
+    return {
+        "data": output,
+        "total": total_count,
+        "skip": skip,
+        "limit": limit
+    }
 
 @router.get("/{student_id}")
 def get_student(

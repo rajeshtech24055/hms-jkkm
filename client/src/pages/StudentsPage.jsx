@@ -193,10 +193,13 @@ export default function StudentsPage() {
   const [promoteForm, setPromoteForm] = useState({ batch: '', from_year: '', to_year: '' });
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 50;
   const defaultForm = { reg_no:'', name:'', gender:'Male', institution_id:'', dept_id:'', year:'1st', batch:'2024-2028', room_id:'', guardian_name:'', guardian_phone:'', guardian_email:'', blood_group:'O+', mobile:'', email:'', dob:'' };
   const [form, setForm] = useState(defaultForm);
 
-  const fetchStudents = () => {
+  const fetchStudents = (pageToFetch = page) => {
     setLoading(true);
     const params = new URLSearchParams();
     if (filterInst) params.append('institution_id', filterInst);
@@ -204,7 +207,19 @@ export default function StudentsPage() {
     if (filterYear) params.append('year', filterYear);
     if (filterGender) params.append('gender', filterGender);
     if (filterActive) params.append('active', filterActive);
-    api(`/api/students?${params}`).then(setStudents).catch(console.error).finally(() => setLoading(false));
+    
+    const skip = (pageToFetch - 1) * limit;
+    params.append('skip', skip);
+    params.append('limit', limit);
+    
+    api(`/api/students?${params}`)
+      .then(res => {
+        setStudents(res.data);
+        setTotal(res.total);
+        setPage(pageToFetch);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -213,7 +228,7 @@ export default function StudentsPage() {
     api('/api/rooms').then(setRooms);
   }, [api]);
 
-  useEffect(() => { fetchStudents(); }, [api, filterInst, filterDept, filterYear, filterGender, filterActive]);
+  useEffect(() => { fetchStudents(1); }, [api, filterInst, filterDept, filterYear, filterGender, filterActive]);
 
   const openCard = async (student) => {
     setSelectedStudent(student);
@@ -590,6 +605,22 @@ export default function StudentsPage() {
             </table>
           )}
         </div>
+        
+        {!loading && total > 0 && (
+          <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} students
+            </span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-sm" disabled={page === 1} onClick={() => fetchStudents(page - 1)}>
+                Previous
+              </button>
+              <button className="btn btn-sm" disabled={page * limit >= total} onClick={() => fetchStudents(page + 1)}>
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Student Card Modal */}
