@@ -174,6 +174,8 @@ export default function MessPage() {
         // Main item row
         flattenedItems.push({
           ...item,
+          is_expired: item.exp_date && new Date(item.exp_date) < new Date(),
+          expires_soon: item.exp_date && daysUntilExpiry(item.exp_date) <= 15 && daysUntilExpiry(item.exp_date) >= 0,
           is_first_batch: true,
           row_key: `${item.id}_main`,
           master_item: item
@@ -199,6 +201,8 @@ export default function MessPage() {
       } else {
         flattenedItems.push({
           ...item,
+          is_expired: item.exp_date && new Date(item.exp_date) < new Date(),
+          expires_soon: item.exp_date && daysUntilExpiry(item.exp_date) <= 15 && daysUntilExpiry(item.exp_date) >= 0,
           is_first_batch: true,
           row_key: `${item.id}_none`,
           master_item: item
