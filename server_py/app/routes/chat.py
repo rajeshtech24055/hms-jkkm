@@ -12,12 +12,6 @@ from openai import OpenAI
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
-# Initialize Groq Client
-client = OpenAI(
-    api_key=os.getenv("GROQ_API_KEY"),
-    base_url="https://api.groq.com/openai/v1",
-)
-
 class ChatMessageCreate(BaseModel):
     message: str
 
@@ -129,7 +123,7 @@ def send_chat_message(
     # Add the new message
     formatted_history.append({"role": "user", "content": data.message})
 
-    # Tools definition for Grok
+    # Tools definition for Groq
     tools = [
         {
             "type": "function",
@@ -162,6 +156,12 @@ def send_chat_message(
             }
         }
     ]
+
+    # Initialize Groq Client
+    client = OpenAI(
+        api_key=os.getenv("GROQ_API_KEY"),
+        base_url="https://api.groq.com/openai/v1",
+    )
 
     try:
         # Call Groq API
