@@ -6,6 +6,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from pydantic import BaseModel, Field, field_validator
 import qrcode
 from app.database import get_db
@@ -115,7 +116,7 @@ def get_students(
     # Apply shared RBAC filters (Institution, Dept, Year, Gender)
     query = apply_role_filters(query, current_user, Student)
     
-    query = query.filter(Student.is_deleted != True)
+    query = query.filter(or_(Student.is_deleted == False, Student.is_deleted == None))
 
     total_count = query.count()
     results = query.offset(skip).limit(limit).all()
@@ -196,7 +197,7 @@ def get_student(
      .outerjoin(Room, Student.room_id == Room.id)\
      .order_by(Student.id.asc())\
      .filter(Student.id == student_id)\
-     .filter(Student.is_deleted != True).first()
+     .filter(or_(Student.is_deleted == False, Student.is_deleted == None)).first()
 
     if not r:
         raise HTTPException(status_code=404, detail="Student not found")

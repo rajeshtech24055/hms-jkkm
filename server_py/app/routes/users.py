@@ -1,7 +1,7 @@
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from pydantic import BaseModel, Field
 from app.database import get_db
 from app.security import get_password_hash
@@ -124,7 +124,7 @@ def get_users(
     ).outerjoin(Institution, User.institution_id == Institution.id)\
      .outerjoin(Department, User.dept_id == Department.id)
      
-    query = query.filter(User.is_deleted != True)
+    query = query.filter(or_(User.is_deleted == False, User.is_deleted == None))
 
     if role:
         query = query.filter(User.role == role)
@@ -167,7 +167,7 @@ def get_staff_users(
 ):
     staff = db.query(User).filter(
         User.role.in_(["MAINTENANCE", "MESS_WORKER", "GATE_STAFF", "WARDEN"]),
-        User.is_deleted != True
+        or_(User.is_deleted == False, User.is_deleted == None)
     ).order_by(User.id.asc()).all()
     return [{"id": u.id, "name": u.name, "role": u.role} for u in staff]
 
