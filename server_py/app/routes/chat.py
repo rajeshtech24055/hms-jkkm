@@ -2,13 +2,14 @@ import os
 import json
 from datetime import datetime, timedelta
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.models import StudentChatMessage, User, LeaveApplication, MessItem
 from app.dependencies import get_current_user
 from openai import OpenAI
+from app.limiter import limiter
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -79,8 +80,10 @@ def get_chat_history(
     return [{"role": m.role if m.role != "assistant" else "model", "content": m.content, "created_at": m.created_at} for m in messages]
 
 @router.post("")
+@limiter.limit("15/minute")
 def send_chat_message(
     data: ChatMessageCreate,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
