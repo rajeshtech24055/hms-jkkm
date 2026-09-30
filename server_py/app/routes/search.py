@@ -15,11 +15,16 @@ def global_search(
     if not q:
         return []
         
-    students = db.query(Student).filter(
+    query = db.query(Student).filter(
         (Student.name.ilike(f"%{q}%")) | 
         (Student.reg_no.ilike(f"%{q}%")) |
         (Student.mobile.ilike(f"%{q}%"))
-    ).limit(10).all()
+    )
+    
+    from app.dependencies import apply_role_filters
+    query = apply_role_filters(query, current_user, Student)
+    
+    students = query.limit(10).all()
     
     results = []
     for s in students:

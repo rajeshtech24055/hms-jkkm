@@ -176,7 +176,9 @@ def adjust_qty(
     item = db.query(AssetInventoryItem).filter(AssetInventoryItem.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    
+    if data.qty < 0:
+        raise HTTPException(status_code=400, detail="Quantity cannot be negative")
+        
     diff = data.qty - item.qty
     item.qty = data.qty
     item.total_price = item.qty * (item.unit_price or 0.0)
@@ -205,6 +207,9 @@ def assign_asset(
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     
+    if data.assigned_qty <= 0:
+        raise HTTPException(status_code=400, detail="Assigned quantity must be greater than zero")
+        
     if item.qty < data.assigned_qty:
         raise HTTPException(status_code=400, detail="Insufficient quantity")
         
@@ -312,11 +317,44 @@ def update_po_status(
     if not po:
         raise HTTPException(status_code=404, detail="PO not found")
         
+    old_status = po.status
     po.status = data.status
-    if data.approved_by:
+    
+    if data.status == "Approved" and old_status != "Approved":
+        # Securely record who approved it using the authenticated token, not the client payload
+        po.approved_by = str(current_user["id"])
+    elif data.approved_by and not po.approved_by:
         po.approved_by = data.approved_by
+        
     if data.received_qty is not None:
         po.received_qty = data.received_qty
         
+    # Auto-add to inventory if marked as Received
+    if data.status == "Received" and old_status != "Received":
+        received_qty = data.received_qty if data.received_qty is not None else po.requested_qty
+        po.received_qty = received_qty # ensure PO reflects it
+        
+        # Check if item exists in inventory
+        item = db.query(AssetInventoryItem).filter(AssetInventoryItem.name == po.item_name).first()
+        if item:
+            item.qty = (item.qty or 0) + int(received_qty)
+            item.total_price = item.qty * (item.unit_price or 0.0)
+        else:
+            # Create new inventory item
+            new_item = AssetInventoryItem(
+                name=po.item_name,
+                category=po.category or "Other",
+                qty=int(received_qty),
+                min_qty=5,
+                unit="nos",
+                unit_price=po.unit_price,
+                total_price=float(received_qty) * float(po.unit_price or 0.0),
+                vendor=po.vendor,
+                purchase_date=datetime.utcnow().strftime("%Y-%m-%d"),
+                location="Store Room",
+                condition_status="New"
+            )
+            db.add(new_item)
+            
     db.commit()
     return {"success": True, "message": f"PO Status updated to {data.status}"}

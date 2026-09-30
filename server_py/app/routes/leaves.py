@@ -156,11 +156,28 @@ def apply_leave(
     # Check if student is currently outside
     last_log = db.query(EntryExitLog).filter(
         EntryExitLog.student_id == student.id,
-        EntryExitLog.flagged == 0
+        EntryExitLog.authorized == 1
     ).order_by(EntryExitLog.id.desc()).first()
     
     if last_log and last_log.direction == "OUT":
         raise HTTPException(status_code=400, detail="You cannot apply for a leave while you are currently outside the hostel.")
+    # Validate dates
+    now_str = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    if data.from_dt < now_str[:10]:
+        raise HTTPException(status_code=400, detail="Cannot apply for leave in the past.")
+    if data.from_dt > data.to_dt:
+        raise HTTPException(status_code=400, detail="Return date cannot be earlier than departure date.")
+        
+    # Check for overlapping active leaves
+    overlapping = db.query(LeaveApplication).filter(
+        LeaveApplication.student_id == student.id,
+        LeaveApplication.status.in_(["pending", "approved"]),
+        LeaveApplication.to_dt >= data.from_dt,
+        LeaveApplication.from_dt <= data.to_dt
+    ).first()
+    
+    if overlapping:
+        raise HTTPException(status_code=400, detail="You already have a pending or approved leave that overlaps with these dates.")
 
     leave = LeaveApplication(
         student_id=data.student_id,
@@ -377,6 +394,10 @@ def cancel_leave(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     student = db.query(Student).filter(Student.id == leave.student_id).first()
+    
+    if leave.status not in ["pending", "approved"]:
+        raise HTTPException(status_code=400, detail="Only pending or approved leaves can be cancelled.")
+        
     leave.status = "cancelled"
 
     if student:

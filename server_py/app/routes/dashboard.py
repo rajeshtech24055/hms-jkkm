@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -37,7 +37,8 @@ def get_dashboard_stats(
     total_students_q = db.query(Student).filter(*student_filter)
     total_students = total_students_q.count()
     
-    now_str = datetime.utcnow().isoformat()
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    now_str = ist_now.isoformat()
     leave_filter.extend([LeaveApplication.from_dt <= now_str, LeaveApplication.to_dt >= now_str])
     
     # We should really join LeaveApplication with Student to apply student_filters, but for simplicity:
@@ -51,7 +52,7 @@ def get_dashboard_stats(
     for s in total_students_q.all():
         last_log = db.query(EntryExitLog).filter(
             EntryExitLog.student_id == s.id,
-            EntryExitLog.flagged == 0
+            EntryExitLog.authorized == 1
         ).order_by(EntryExitLog.id.desc()).first()
         if last_log and last_log.direction == "OUT":
             outside_cnt += 1

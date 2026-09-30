@@ -89,13 +89,15 @@ async def maintenance_escalation_loop():
                 expiring_items = db.query(MessItem).filter(
                     MessItem.exp_date != None,
                     MessItem.exp_date <= warning_date.strftime("%Y-%m-%d"),
-                    MessItem.exp_date >= now.strftime("%Y-%m-%d")
+                    MessItem.current_stock > 0
                 ).all()
                 
-                expiring_restocks = db.query(MessRestockLog).filter(
+                expiring_restocks = db.query(MessRestockLog).join(
+                    MessItem, MessRestockLog.item_id == MessItem.id
+                ).filter(
                     MessRestockLog.exp_date != None,
                     MessRestockLog.exp_date <= warning_date.strftime("%Y-%m-%d"),
-                    MessRestockLog.exp_date >= now.strftime("%Y-%m-%d")
+                    MessItem.current_stock > 0
                 ).all()
                 
                 # Combine unique item names

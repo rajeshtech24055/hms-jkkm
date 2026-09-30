@@ -19,7 +19,8 @@ def get_occupancy_forecast(
     db: Session = Depends(get_db)
 ):
     total_students = db.query(Student).filter(Student.active == 1).count()
-    now_str = datetime.utcnow().isoformat()
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    now_str = ist_now.isoformat()
 
     # 1. Approved leaves today
     leaves_today = db.query(LeaveApplication).filter(
@@ -33,7 +34,8 @@ def get_occupancy_forecast(
     outside_count = 0
     for s in students:
         last_log = db.query(EntryExitLog).filter(
-            EntryExitLog.student_id == s.id
+            EntryExitLog.student_id == s.id,
+            EntryExitLog.authorized == 1
         ).order_by(EntryExitLog.id.desc()).first()
         if last_log and last_log.direction == "OUT":
             outside_count += 1

@@ -34,7 +34,8 @@ def get_analytics_overview(
         room_q = room_q.filter(Room.gender == current_user["gender"])
 
     total_students = student_q.count()
-    now_str = datetime.utcnow().isoformat()
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    now_str = ist_now.isoformat()
     
     # Apply same filtering logic to leaves
     leave_q = db.query(LeaveApplication).join(Student, LeaveApplication.student_id == Student.id)
@@ -54,7 +55,7 @@ def get_analytics_overview(
     for s in students:
         last_log = db.query(EntryExitLog).filter(
             EntryExitLog.student_id == s.id,
-            EntryExitLog.flagged == 0
+            EntryExitLog.authorized == 1
         ).order_by(EntryExitLog.id.desc()).first()
         if last_log and last_log.direction == "OUT":
             outside_cnt += 1

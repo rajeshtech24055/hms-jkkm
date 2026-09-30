@@ -220,9 +220,19 @@ def get_expiry_alerts(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Just returning all items that have an exp_date for now as a stub
-    items = db.query(MessItem).filter(MessItem.exp_date != None).all()
-    return [{"id": i.id, "name": i.name, "exp_date": i.exp_date} for i in items]
+    from datetime import datetime, timedelta
+    now = datetime.utcnow()
+    warning_date = now + timedelta(days=15)
+    
+    # Get items that are expiring within 15 days or already expired
+    # (assuming they haven't been consumed yet, but for now we just check exp_date)
+    items = db.query(MessItem).filter(
+        MessItem.exp_date != None,
+        MessItem.exp_date <= warning_date.strftime("%Y-%m-%d"),
+        MessItem.current_stock > 0
+    ).all()
+    
+    return [{"id": i.id, "name": i.name, "exp_date": i.exp_date, "current_stock": i.current_stock} for i in items]
 
 @router.get("/meals-served")
 def get_meals_served(db: Session = Depends(get_db)):

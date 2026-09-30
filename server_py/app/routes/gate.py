@@ -77,7 +77,8 @@ def scan_gate(
     # 2. Find Student by reg_no or qr_token
     student = db.query(Student).filter(
         (func.upper(Student.reg_no) == reg_no) | (Student.qr_token == reg_no),
-        Student.active == 1
+        Student.active == 1,
+        Student.is_deleted == 0
     ).first()
 
     if not student:
@@ -86,7 +87,7 @@ def scan_gate(
     # 3. Determine Direction (IN vs OUT)
     last_log = db.query(EntryExitLog).filter(
         EntryExitLog.student_id == student.id,
-        EntryExitLog.flagged == 0
+        EntryExitLog.authorized == 1
     ).order_by(EntryExitLog.id.desc()).first()
 
     direction = "OUT" if (not last_log or last_log.direction == "IN") else "IN"
@@ -248,11 +249,13 @@ def get_outside_students(
     students = query.all()
     output = []
     
-    now_utc = datetime.utcnow().isoformat()
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    now_ist = ist_now.isoformat()
     
     for s in students:
         last_log = db.query(EntryExitLog).filter(
-            EntryExitLog.student_id == s.id
+            EntryExitLog.student_id == s.id,
+            EntryExitLog.authorized == 1
         ).order_by(EntryExitLog.id.desc()).first()
 
         if last_log and last_log.direction == "OUT":
@@ -266,7 +269,7 @@ def get_outside_students(
             expected_return = None
             if active_leave:
                 expected_return = active_leave.to_dt
-                if now_utc > active_leave.to_dt:
+                if now_ist > active_leave.to_dt:
                     is_overdue = True
                     
             output.append({
@@ -276,7 +279,7 @@ def get_outside_students(
                 "reg_no": s.reg_no,
                 "dept_name": s.department.name if s.department else "",
                 "institution_code": s.institution.code if s.institution else "",
-                "room_no": s.room.room_number if s.room else "",
+                "room_no": s.room.room_no if s.room else "",
                 "mobile": s.mobile,
                 "guardian_phone": s.guardian_phone,
                 "exit_time": last_log.created_at,

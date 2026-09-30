@@ -126,20 +126,21 @@ def get_students(
         # Find last log direction
         last_log = db.query(EntryExitLog).filter(
             EntryExitLog.student_id == student.id,
-            EntryExitLog.flagged == 0
+            EntryExitLog.authorized == 1
         ).order_by(EntryExitLog.id.desc()).first()
 
         last_dir = last_log.direction if last_log else "IN"
         
         is_overdue = False
         if last_dir == "OUT":
-            from datetime import datetime
-            now_utc = datetime.utcnow().isoformat()
+            from datetime import datetime, timedelta
+            ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+            now_ist = ist_now.isoformat()
             active_leave = db.query(LeaveApplication).filter(
                 LeaveApplication.student_id == student.id,
                 LeaveApplication.status.in_(["approved", "used"])
             ).order_by(LeaveApplication.id.desc()).first()
-            if active_leave and active_leave.to_dt and now_utc > active_leave.to_dt:
+            if active_leave and active_leave.to_dt and now_ist > active_leave.to_dt:
                 is_overdue = True
 
         s_dict = {

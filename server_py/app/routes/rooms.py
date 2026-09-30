@@ -106,7 +106,7 @@ def get_room_students(
         student, inst_code, dept_name = r
         last_log = db.query(EntryExitLog).filter(
             EntryExitLog.student_id == student.id,
-            EntryExitLog.flagged == 0
+            EntryExitLog.authorized == 1
         ).order_by(EntryExitLog.id.desc()).first()
 
         last_dir = last_log.direction if last_log else "IN"

@@ -22,7 +22,16 @@ def get_sos_incidents(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    incidents = db.query(SosIncident).order_by(SosIncident.id.desc()).limit(50).all()
+    query = db.query(SosIncident).outerjoin(Student, SosIncident.student_id == Student.id)
+    
+    role = current_user["role"]
+    if role == "STUDENT":
+        query = query.filter(SosIncident.student_id == current_user["id"])
+    else:
+        from app.dependencies import apply_role_filters
+        query = apply_role_filters(query, current_user, Student)
+        
+    incidents = query.order_by(SosIncident.id.desc()).limit(50).all()
     return incidents
 
 @router.post("/trigger")

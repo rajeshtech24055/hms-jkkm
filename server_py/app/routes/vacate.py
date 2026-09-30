@@ -43,8 +43,9 @@ def get_vacate_requests(
     role = current_user["role"]
     if role == "STUDENT":
         query = query.filter(HostelVacateRequest.student_id == current_user["id"])
-    elif role == "WARDEN" and current_user.get("gender"):
-        query = query.filter(Student.gender == current_user["gender"])
+    else:
+        from app.dependencies import apply_role_filters
+        query = apply_role_filters(query, current_user, Student)
 
     results = query.order_by(HostelVacateRequest.id.desc()).all()
     output = []
