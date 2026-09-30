@@ -166,7 +166,7 @@ def send_chat_message(
     try:
         # Call Groq API
         response = client.chat.completions.create(
-            model="llama-3.1-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=formatted_history,
             tools=tools,
             temperature=0.7
@@ -193,7 +193,7 @@ def send_chat_message(
                 
             # Send results back to Groq to get the final text response
             second_response = client.chat.completions.create(
-                model="llama-3.1-70b-versatile",
+                model="openai/gpt-oss-120b",
                 messages=formatted_history
             )
             final_text = second_response.choices[0].message.content
