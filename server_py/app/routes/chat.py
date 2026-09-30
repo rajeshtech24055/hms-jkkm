@@ -27,7 +27,7 @@ def get_leave_status(db: Session, student_id: int) -> str:
     
     result = "Recent leave applications:\n"
     for leave in leaves:
-        result += f"- From {leave.start_date} to {leave.end_date}: Status is {leave.status}.\n"
+        result += f"- From {leave.from_dt} to {leave.to_dt}: Status is {leave.status}.\n"
     return result
 
 def get_weekly_menu(db: Session) -> str:
@@ -38,10 +38,13 @@ def apply_for_leave(db: Session, student_id: int, reason: str, start_date: str, 
     try:
         leave = LeaveApplication(
             student_id=student_id,
+            type="Other",
+            place="Other",
             reason=reason,
-            start_date=start_date,
-            end_date=end_date,
-            status="Pending"
+            from_dt=start_date,
+            to_dt=end_date,
+            status="pending",
+            current_level=1
         )
         db.add(leave)
         db.commit()
