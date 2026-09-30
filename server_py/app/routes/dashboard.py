@@ -48,14 +48,10 @@ def get_dashboard_stats(
         *( [Student.institution_id == current_user["institution_id"]] if current_user["role"] not in ["SUPER_ADMIN", "HOSTEL_ADMIN"] and current_user.get("institution_id") else [] )
     ).count()
 
-    outside_cnt = 0
-    for s in total_students_q.all():
-        last_log = db.query(EntryExitLog).filter(
-            EntryExitLog.student_id == s.id,
-            EntryExitLog.authorized == 1
-        ).order_by(EntryExitLog.id.desc()).first()
-        if last_log and last_log.direction == "OUT":
-            outside_cnt += 1
+    subq = db.query(func.max(EntryExitLog.id).label("max_id")).filter(EntryExitLog.authorized == 1).group_by(EntryExitLog.student_id).subquery()
+    latest_logs = db.query(EntryExitLog).join(subq, EntryExitLog.id == subq.c.max_id).subquery()
+    
+    outside_cnt = total_students_q.join(latest_logs, Student.id == latest_logs.c.student_id).filter(latest_logs.c.direction == "OUT").count()
 
     open_complaints = db.query(Complaint).filter(*complaint_filter).count()
     open_tickets = db.query(MaintenanceRequest).filter(*ticket_filter).count()

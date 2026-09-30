@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 from app.database import get_db
 from app.security import decode_token
@@ -245,49 +245,70 @@ def get_outside_students(
     
     # Apply role-based filters (HOD sees dept, Tutor sees class, etc.)
     query = apply_role_filters(query, current_user, Student)
+    # Eager load relationships for the base query
+    query = query.options(
+        joinedload(Student.department),
+        joinedload(Student.institution),
+        joinedload(Student.room)
+    )
     
-    students = query.all()
+    # Subquery for max entry/exit log per student
+    log_subq = db.query(func.max(EntryExitLog.id).label("max_id")).filter(EntryExitLog.authorized == 1).group_by(EntryExitLog.student_id).subquery()
+    latest_logs = db.query(EntryExitLog).join(log_subq, EntryExitLog.id == log_subq.c.max_id).subquery()
+
+    # Subquery for active leave per student
+    leave_subq = db.query(func.max(LeaveApplication.id).label("max_id")).filter(LeaveApplication.status.in_(["approved", "used"])).group_by(LeaveApplication.student_id).subquery()
+    active_leaves = db.query(LeaveApplication).join(leave_subq, LeaveApplication.id == leave_subq.c.max_id).subquery()
+
+    # Join the base query to find only OUT students
+    # Filter the query we built with apply_role_filters
+    outside_records = query.join(latest_logs, Student.id == latest_logs.c.student_id).\
+        outerjoin(active_leaves, Student.id == active_leaves.c.student_id).\
+        filter(latest_logs.c.direction == "OUT").all()
+    # But wait, query.all() will just return Student objects. 
+    # To get the latest_logs and active_leaves columns, we need to add them to entities.
+    # We can do db.query(Student, latest_logs, active_leaves) but apply_role_filters expects query to be on Student.
+    # Since we can just use `add_columns`, let's do:
+    outside_records = query.join(latest_logs, Student.id == latest_logs.c.student_id).\
+        outerjoin(active_leaves, Student.id == active_leaves.c.student_id).\
+        filter(latest_logs.c.direction == "OUT").\
+        add_columns(latest_logs.c.created_at.label("log_created_at"), 
+                    latest_logs.c.flagged.label("log_flagged"),
+                    active_leaves.c.to_dt.label("leave_to_dt"),
+                    active_leaves.c.type.label("leave_type")).all()
+
     output = []
     
     ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
     now_ist = ist_now.isoformat()
     
-    for s in students:
-        last_log = db.query(EntryExitLog).filter(
-            EntryExitLog.student_id == s.id,
-            EntryExitLog.authorized == 1
-        ).order_by(EntryExitLog.id.desc()).first()
+    for row in outside_records:
+        s = row[0] # Student
+        exit_time = row.log_created_at
+        flagged = row.log_flagged
+        to_dt = row.leave_to_dt
+        leave_type = row.leave_type
 
-        if last_log and last_log.direction == "OUT":
-            # Check for overdue leave
-            active_leave = db.query(LeaveApplication).filter(
-                LeaveApplication.student_id == s.id,
-                LeaveApplication.status.in_(["approved", "used"])
-            ).order_by(LeaveApplication.id.desc()).first()
-            
-            is_overdue = False
-            expected_return = None
-            if active_leave:
-                expected_return = active_leave.to_dt
-                if now_ist > active_leave.to_dt:
-                    is_overdue = True
-                    
-            output.append({
-                "id": s.id,
-                "student_id": s.id,
-                "name": s.name,
-                "reg_no": s.reg_no,
-                "dept_name": s.department.name if s.department else "",
-                "institution_code": s.institution.code if s.institution else "",
-                "room_no": s.room.room_no if s.room else "",
-                "mobile": s.mobile,
-                "guardian_phone": s.guardian_phone,
-                "exit_time": last_log.created_at,
-                "out_since": last_log.created_at,
-                "flagged": last_log.flagged,
-                "is_overdue": is_overdue,
-                "to_dt": expected_return,
-                "expected_return": expected_return,
-                "leave_type": active_leave.leave_type if active_leave else None
-            })
+        is_overdue = False
+        if to_dt and now_ist > to_dt:
+            is_overdue = True
+                
+        output.append({
+            "id": s.id,
+            "student_id": s.id,
+            "name": s.name,
+            "reg_no": s.reg_no,
+            "dept_name": s.department.name if s.department else "",
+            "institution_code": s.institution.code if s.institution else "",
+            "room_no": s.room.room_no if s.room else "",
+            "mobile": s.mobile,
+            "guardian_phone": s.guardian_phone,
+            "exit_time": exit_time,
+            "out_since": exit_time,
+            "flagged": flagged,
+            "is_overdue": is_overdue,
+            "to_dt": to_dt,
+            "expected_return": to_dt,
+            "leave_type": leave_type
+        })
     return output

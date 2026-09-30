@@ -120,26 +120,48 @@ def get_students(
 
     total_count = query.count()
     results = query.offset(skip).limit(limit).all()
+    
+    student_ids = [r[0].id for r in results]
+    latest_logs_map = {}
+    active_leaves_map = {}
+    
+    if student_ids:
+        # Fetch latest log per student in bulk
+        from sqlalchemy import func
+        log_subq = db.query(func.max(EntryExitLog.id).label("max_id")).filter(
+            EntryExitLog.student_id.in_(student_ids),
+            EntryExitLog.authorized == 1
+        ).group_by(EntryExitLog.student_id).subquery()
+        
+        latest_logs = db.query(EntryExitLog).join(log_subq, EntryExitLog.id == log_subq.c.max_id).all()
+        for log in latest_logs:
+            latest_logs_map[log.student_id] = log
+            
+        # Fetch active leave per student in bulk
+        leave_subq = db.query(func.max(LeaveApplication.id).label("max_id")).filter(
+            LeaveApplication.student_id.in_(student_ids),
+            LeaveApplication.status.in_(["approved", "used"])
+        ).group_by(LeaveApplication.student_id).subquery()
+        
+        active_leaves = db.query(LeaveApplication).join(leave_subq, LeaveApplication.id == leave_subq.c.max_id).all()
+        for leave in active_leaves:
+            active_leaves_map[leave.student_id] = leave
+
     output = []
+    
+    from datetime import datetime, timedelta
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    now_ist = ist_now.isoformat()
+    
     for r in results:
         student, inst_name, inst_code, dept_name, room_no, block = r
-        # Find last log direction
-        last_log = db.query(EntryExitLog).filter(
-            EntryExitLog.student_id == student.id,
-            EntryExitLog.authorized == 1
-        ).order_by(EntryExitLog.id.desc()).first()
-
+        
+        last_log = latest_logs_map.get(student.id)
         last_dir = last_log.direction if last_log else "IN"
         
         is_overdue = False
         if last_dir == "OUT":
-            from datetime import datetime, timedelta
-            ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
-            now_ist = ist_now.isoformat()
-            active_leave = db.query(LeaveApplication).filter(
-                LeaveApplication.student_id == student.id,
-                LeaveApplication.status.in_(["approved", "used"])
-            ).order_by(LeaveApplication.id.desc()).first()
+            active_leave = active_leaves_map.get(student.id)
             if active_leave and active_leave.to_dt and now_ist > active_leave.to_dt:
                 is_overdue = True
 

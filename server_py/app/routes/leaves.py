@@ -108,10 +108,18 @@ def get_leaves(
 
     total_count = query.count()
     results = query.order_by(LeaveApplication.id.desc()).offset(skip).limit(limit).all()
+    
+    leave_ids = [r[0].id for r in results]
+    approvals_map = {}
+    if leave_ids:
+        all_approvals = db.query(LeaveApproval).filter(LeaveApproval.application_id.in_(leave_ids)).all()
+        for a in all_approvals:
+            approvals_map.setdefault(a.application_id, []).append(a)
+            
     output = []
     for r in results:
         leave, name, reg_no, gender, year, dept_name, inst_code = r
-        approvals = db.query(LeaveApproval).filter(LeaveApproval.application_id == leave.id).all()
+        approvals = approvals_map.get(leave.id, [])
         output.append({
             "id": leave.id,
             "student_id": leave.student_id,
