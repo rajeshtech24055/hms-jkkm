@@ -19,12 +19,12 @@ export default function Dashboard({ onNavigate }) {
     api('/api/notices').then(setNotices).catch(() => {});
 
     // Fetch base analytics overview for all staff who need stats cards
-    if (['SUPER_ADMIN', 'HOSTEL_ADMIN', 'WARDEN', 'TUTOR', 'HOD'].includes(user?.role)) {
+    if (['SUPER_ADMIN', 'HOSTEL_ADMIN', 'WARDEN', 'TUTOR', 'HOD', 'MESS_ADMIN', 'MESS_WORKER'].includes(user?.role)) {
       api('/api/analytics/overview').then(setStats).catch(() => {});
     }
 
     // Only fetch AI forecasts for higher level admins
-    if (['SUPER_ADMIN', 'HOSTEL_ADMIN', 'WARDEN'].includes(user?.role)) {
+    if (['SUPER_ADMIN', 'HOSTEL_ADMIN', 'WARDEN', 'MESS_ADMIN', 'MESS_WORKER'].includes(user?.role)) {
       api('/api/forecast/occupancy').then(setAiOccupancy).catch(() => {});
       api('/api/forecast/meals').then(setAiMeals).catch(() => {});
       api('/api/forecast/analytics/anomalies').then(setAnomalies).catch(() => {});
@@ -103,16 +103,26 @@ export default function Dashboard({ onNavigate }) {
             </div>
           )}
 
-          {aiMeals && ['SUPER_ADMIN', 'FOOD_ADMIN', 'HOSTEL_ADMIN', 'PRINCIPAL'].includes(user?.role) && (
+          {aiMeals && ['SUPER_ADMIN', 'MESS_ADMIN', 'MESS_WORKER', 'HOSTEL_ADMIN', 'PRINCIPAL'].includes(user?.role) && (
             <div className="card" style={{ borderLeft: '4px solid #10b981', background: 'rgba(16,185,129,0.05)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: 0.5 }}>🍽️ Meal Demand Prediction</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: 0.5 }}>🍽️ Meal Demand & Cooking Plan</div>
               <div style={{ fontSize: 13, fontWeight: 700, margin: '8px 0 4px', display: 'flex', gap: 12 }}>
                 <span>B: {aiMeals.predictions?.breakfast}</span>
                 <span>L: {aiMeals.predictions?.lunch}</span>
                 <span>S: {aiMeals.predictions?.snacks}</span>
                 <span>D: {aiMeals.predictions?.dinner}</span>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{aiMeals.recommendation}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>{aiMeals.recommendation}</div>
+              {aiMeals.cooking_plan && (
+                <div style={{ background: '#fff', padding: 8, borderRadius: 6, border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4 }}>Exact Quantities Needed:</div>
+                  <div style={{ fontSize: 12, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                    <div style={{ background: '#f8fafc', padding: '4px 8px', borderRadius: 4 }}>🍚 Rice: <b>{aiMeals.cooking_plan.lunch?.rice_kg} kg</b></div>
+                    <div style={{ background: '#f8fafc', padding: '4px 8px', borderRadius: 4 }}>🍛 Dal: <b>{aiMeals.cooking_plan.lunch?.dal_kg} kg</b></div>
+                    <div style={{ background: '#f8fafc', padding: '4px 8px', borderRadius: 4 }}>🫑 Veg: <b>{aiMeals.cooking_plan.lunch?.vegetables_kg} kg</b></div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

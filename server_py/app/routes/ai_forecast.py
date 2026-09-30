@@ -29,16 +29,12 @@ def get_occupancy_forecast(
         LeaveApplication.to_dt >= now_str
     ).count()
 
-    # 2. Outside students count
-    students = db.query(Student).filter(Student.active == 1).all()
-    outside_count = 0
-    for s in students:
-        last_log = db.query(EntryExitLog).filter(
-            EntryExitLog.student_id == s.id,
-            EntryExitLog.authorized == 1
-        ).order_by(EntryExitLog.id.desc()).first()
-        if last_log and last_log.direction == "OUT":
-            outside_count += 1
+    # 2. Outside students count (optimized)
+    from sqlalchemy import func
+    log_subq = db.query(func.max(EntryExitLog.id).label("max_id")).filter(EntryExitLog.authorized == 1).group_by(EntryExitLog.student_id).subquery()
+    latest_logs = db.query(EntryExitLog).join(log_subq, EntryExitLog.id == log_subq.c.max_id).subquery()
+    
+    outside_count = db.query(Student).join(latest_logs, Student.id == latest_logs.c.student_id).filter(Student.active == 1, latest_logs.c.direction == "OUT").count()
 
     # 3. Pull last 14 snapshots for trend analysis via Pandas
     snapshots = db.query(DailySnapshot).order_by(DailySnapshot.id.desc()).limit(14).all()
@@ -97,6 +93,28 @@ def get_meal_demand_forecast(
     s_predicted = int(base_occupancy * s_ratio)
     d_predicted = int(base_occupancy * d_ratio)
 
+    # Predictive cooking ratios per person (Kg/Liters)
+    RICE_PER_PERSON = 0.150
+    DAL_PER_PERSON = 0.040
+    VEG_PER_PERSON = 0.150
+    OIL_PER_PERSON = 0.025
+    ATTA_PER_PERSON = 0.100
+
+    cooking_plan = {
+        "lunch": {
+            "rice_kg": round(l_predicted * RICE_PER_PERSON, 1),
+            "dal_kg": round(l_predicted * DAL_PER_PERSON, 1),
+            "vegetables_kg": round(l_predicted * VEG_PER_PERSON, 1),
+            "oil_liters": round(l_predicted * OIL_PER_PERSON, 1),
+        },
+        "dinner": {
+            "atta_kg": round(d_predicted * ATTA_PER_PERSON, 1),
+            "dal_kg": round(d_predicted * DAL_PER_PERSON, 1),
+            "vegetables_kg": round(d_predicted * VEG_PER_PERSON, 1),
+            "oil_liters": round(d_predicted * OIL_PER_PERSON, 1),
+        }
+    }
+
     return {
         "forecast_date": datetime.utcnow().strftime("%Y-%m-%d"),
         "base_occupancy": base_occupancy,
@@ -106,7 +124,8 @@ def get_meal_demand_forecast(
             "snacks": s_predicted,
             "dinner": d_predicted
         },
-        "recommendation": f"Prepare for ~{l_predicted} students at Lunch today and ~{d_predicted} at Dinner."
+        "cooking_plan": cooking_plan,
+        "recommendation": f"Prepare for ~{l_predicted} students at Lunch. Recommended cooking: {cooking_plan['lunch']['rice_kg']}kg Rice, {cooking_plan['lunch']['dal_kg']}kg Dal."
     }
 
 @router.get("/inventory")
