@@ -58,7 +58,7 @@ export default function Dashboard({ onNavigate }) {
             <div className="stat-card amber" onClick={() => onNavigate('leaves')} style={{ cursor: 'pointer' }}>
               <div className="stat-icon">📋</div>
               <div className="stat-value">{stats.pendingLeaves}</div>
-              <div className="stat-label">Pending Leave Requests</div>
+              <div className="stat-label">Students Pending Leave</div>
             </div>
           ) : (
             <div className="stat-card teal" onClick={() => onNavigate('rooms')} style={{ cursor: 'pointer' }}>

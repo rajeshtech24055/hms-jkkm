@@ -41,7 +41,7 @@ def get_analytics_overview(
     leave_q = db.query(LeaveApplication).join(Student, LeaveApplication.student_id == Student.id)
     leave_q = apply_role_filters(leave_q, current_user, Student)
 
-    pending_leaves = leave_q.filter(LeaveApplication.status == "pending").count()
+    pending_leaves = leave_q.filter(LeaveApplication.status == "pending").with_entities(func.count(func.distinct(LeaveApplication.student_id))).scalar()
     approved_leaves = leave_q.filter(
         LeaveApplication.status == "approved",
         LeaveApplication.from_dt <= now_str,
