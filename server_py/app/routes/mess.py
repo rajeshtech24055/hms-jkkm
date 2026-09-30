@@ -185,6 +185,7 @@ def use_mess_item(
     if item.current_stock < data.qty:
         raise HTTPException(status_code=400, detail="Insufficient stock")
         
+    old_stock = item.current_stock
     item.current_stock -= data.qty
     
     log = MessUsageLog(
@@ -195,6 +196,14 @@ def use_mess_item(
     )
     db.add(log)
     db.commit()
+    
+    # Trigger Low Stock Alert if it crosses the threshold
+    if old_stock > item.reorder_level and item.current_stock <= item.reorder_level:
+        from app.utils.push import notify_role
+        msg = f"Low stock alert: {item.name} has dropped to {item.current_stock} {item.unit}."
+        notify_role(db, "FOOD_ADMIN", "📉 Low Stock Alert", msg, {"type": "inventory_alert"})
+        notify_role(db, "MESS_WORKER", "📉 Low Stock Alert", msg, {"type": "inventory_alert"})
+        
     return {"success": True, "new_stock": item.current_stock}
 
 @router.get("/usage")

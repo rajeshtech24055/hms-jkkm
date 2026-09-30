@@ -120,6 +120,31 @@ async def maintenance_escalation_loop():
                         )
             except Exception as e:
                 logger.error(f"Error in mess expiry check: {e}")
+                
+            # Check for Low Stock (Mess Items)
+            try:
+                low_stock_items = db.query(MessItem).filter(
+                    MessItem.current_stock <= MessItem.reorder_level,
+                    MessItem.current_stock > 0  # Ignore out-of-stock items for this specific alert, or maybe include them? Let's include them, out of stock is definitely "low stock"
+                ).all()
+                
+                low_stock_names = [i.name for i in low_stock_items]
+                if low_stock_names:
+                    from sqlalchemy import cast, String
+                    targets = db.query(DeviceToken).join(
+                        User, DeviceToken.user_id == cast(User.id, String)
+                    ).filter(User.role.in_(["FOOD_ADMIN", "MESS_WORKER"])).all()
+                    
+                    for admin_token in targets:
+                        send_push_notification(
+                            token=admin_token.token,
+                            title="Mess Low Stock Alert 📉",
+                            body=f"Low stock detected for: {', '.join(low_stock_names[:3])}",
+                            data={"type": "inventory_alert"}
+                        )
+            except Exception as e:
+                logger.error(f"Error in mess low stock check: {e}")
+                
             finally:
                 db.close()
                 
