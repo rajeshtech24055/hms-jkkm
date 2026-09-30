@@ -112,6 +112,8 @@ def on_startup():
     print("[INIT] Initializing Python FastAPI Engine & Database...")
     seed_database()
     init_firebase()
+    from app.cron import start_cron
+    start_cron()
     asyncio.create_task(maintenance_escalation_loop())
 
 if __name__ == "__main__":
