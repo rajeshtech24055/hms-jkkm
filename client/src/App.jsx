@@ -480,10 +480,48 @@ function MainLayout() {
                     <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>PHONE NO</span>
                     <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.phone || 'N/A'}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>DEPARTMENT</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.dept_name || 'N/A'}</span>
-                  </div>
+
+                  {user?.role === 'TUTOR' && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>CLASS/YEAR</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.year ? `${user.year} Year` : 'N/A'}</span>
+                    </div>
+                  )}
+
+                  {user?.role === 'WARDEN' && (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>HOSTEL</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.gender ? `${user.gender} Hostel` : 'N/A'}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>INSTITUTION</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.institution_name || 'N/A'}</span>
+                      </div>
+                    </>
+                  )}
+
+                  {user?.role === 'PRINCIPAL' && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>INSTITUTION</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.institution_name || 'N/A'}</span>
+                    </div>
+                  )}
+
+                  {user?.role === 'HOD' && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>DEPARTMENT</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.dept_name || 'N/A'}</span>
+                    </div>
+                  )}
+
+                  {/* Fallback for others like HOSTEL_ADMIN, SUPER_ADMIN */}
+                  {!['TUTOR', 'WARDEN', 'PRINCIPAL', 'HOD'].includes(user?.role) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>INSTITUTION</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.institution_name || 'N/A'}</span>
+                    </div>
+                  )}
                 </div>
               )}
               

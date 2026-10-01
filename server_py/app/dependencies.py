@@ -52,6 +52,7 @@ def get_current_user(
         "name": user.name,
         "role": user.role,
         "institution_id": user.institution_id,
+        "institution_name": user.institution.name if user.institution else "",
         "dept_id": user.dept_id,
         "dept_name": user.department.name if user.department else "",
         "year": user.year,
