@@ -451,7 +451,7 @@ function MainLayout() {
                 </div>
               </div>
 
-              {user?.role === 'STUDENT' && (
+              {user?.role === 'STUDENT' ? (
                 <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
                     <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>REGISTER NO</span>
@@ -463,11 +463,26 @@ function MainLayout() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
                     <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>CLASS/YEAR</span>
-                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.year} Year</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.year ? `${user.year} Year` : 'N/A'}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>ACADEMIC BATCH</span>
                     <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.batch || 'N/A'}</span>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>EMAIL</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.email || 'N/A'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>PHONE NO</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.phone || 'N/A'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>DEPARTMENT</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.dept_name || 'N/A'}</span>
                   </div>
                 </div>
               )}
