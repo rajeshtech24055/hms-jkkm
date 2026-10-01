@@ -154,7 +154,7 @@ def delete_asset(
     if not item:
         raise HTTPException(status_code=404, detail="Asset not found")
     
-    db.delete(item)
+    item.is_deleted = True
     db.commit()
     return {"success": True, "message": "Asset deleted"}
 

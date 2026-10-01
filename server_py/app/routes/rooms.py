@@ -186,7 +186,7 @@ def delete_room(
         db.query(Student).filter(Student.room_id == room_id).update({"room_id": None})
         room = db.query(Room).filter(Room.id == room_id).first()
         if room:
-            db.delete(room)
+            room.is_deleted = True
             db.commit()
         return {"success": True, "message": "Room deleted and students unassigned"}
     except Exception as e:

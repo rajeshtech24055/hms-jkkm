@@ -91,6 +91,6 @@ def delete_department(
     if students_count > 0 or users_count > 0:
         raise HTTPException(status_code=400, detail=f"Cannot delete. {students_count} students and {users_count} users are assigned to this department.")
 
-    db.delete(dept)
+    dept.is_deleted = True
     db.commit()
     return {"success": True, "message": "Department deleted"}

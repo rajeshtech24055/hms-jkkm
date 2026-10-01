@@ -238,6 +238,6 @@ def delete_complaint(
     c = db.query(Complaint).filter(Complaint.id == complaint_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Complaint not found")
-    db.delete(c)
+    c.is_deleted = True
     db.commit()
     return {"success": True, "message": "Complaint deleted"}

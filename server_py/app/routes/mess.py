@@ -124,7 +124,7 @@ def delete_mess_item(
     if not item:
         raise HTTPException(status_code=404, detail="Mess item not found")
     
-    db.delete(item)
+    item.is_deleted = True
     db.commit()
     return {"success": True, "message": "Mess item deleted"}
 

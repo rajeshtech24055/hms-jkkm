@@ -54,6 +54,6 @@ def delete_notice(
     # if current_user["role"] != "SUPER_ADMIN" and n.posted_by != current_user["id"]:
     #     raise HTTPException(status_code=403, detail="Not authorized to delete this notice")
         
-    db.delete(n)
+    n.is_deleted = True
     db.commit()
     return {"message": "Notice deleted successfully"}

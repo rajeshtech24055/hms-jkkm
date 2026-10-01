@@ -28,6 +28,7 @@ class Department(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, nullable=False)
     institution_id = Column(Integer, ForeignKey("institutions.id"))
+    is_deleted = Column(Boolean, default=False)
 
     institution = relationship("Institution", back_populates="departments")
     students = relationship("Student", back_populates="department")
@@ -63,6 +64,7 @@ class Room(Base):
     gender = Column(String, nullable=False)
     hostel_id = Column(Integer, ForeignKey("hostels.id"), nullable=True)
     institution_id = Column(Integer, ForeignKey("institutions.id"), nullable=True)
+    is_deleted = Column(Boolean, default=False)
 
     hostel = relationship("Hostel", back_populates="rooms")
     institution = relationship("Institution", back_populates="rooms")
@@ -157,6 +159,7 @@ class MessItem(Base):
     exp_date = Column(String, nullable=True)
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
     updated_at = Column(String, nullable=True)
+    is_deleted = Column(Boolean, default=False)
 
     restocks = relationship("MessRestockLog", back_populates="item")
 
@@ -240,6 +243,7 @@ class AssetInventoryItem(Base):
     warranty_expiry = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
     updated_at = Column(String, nullable=True)
+    is_deleted = Column(Boolean, default=False)
 
 
 
@@ -263,6 +267,7 @@ class MaintenanceRequest(Base):
     last_escalated_at = Column(String, default=lambda: datetime.utcnow().isoformat())
     
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+    is_deleted = Column(Boolean, default=False)
 
 class Complaint(Base):
     __tablename__ = "complaints"
@@ -280,6 +285,7 @@ class Complaint(Base):
     resolved_by = Column(String, nullable=True)
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
     updated_at = Column(String, nullable=True)
+    is_deleted = Column(Boolean, default=False)
 
 class HostelVacateRequest(Base):
     __tablename__ = "hostel_vacate_requests"
@@ -306,6 +312,7 @@ class Notice(Base):
     content = Column(Text, nullable=False)
     category = Column(String, nullable=True)
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+    is_deleted = Column(Boolean, default=False)
 
 class NotificationLog(Base):
     __tablename__ = "notification_logs"
