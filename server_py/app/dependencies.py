@@ -35,7 +35,9 @@ def get_current_user(
             "role": "STUDENT",
             "institution_id": student.institution_id,
             "dept_id": student.dept_id,
+            "dept_name": student.department.name if student.department else "",
             "year": student.year,
+            "batch": student.batch,
             "gender": student.gender,
             "reg_no": student.reg_no
         }

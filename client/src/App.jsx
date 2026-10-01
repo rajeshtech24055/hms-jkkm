@@ -144,6 +144,7 @@ function MainLayout() {
   const [activePage, setActivePage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [showNotifModal, setShowNotifModal] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [liveAlerts, setLiveAlerts] = useState([]);
@@ -268,7 +269,7 @@ function MainLayout() {
               🔔 <span className="notif-dot" style={{ position:'absolute',top:6,right:6 }} />
             </button>
             <button
-              onClick={() => { if(window.confirm('Logout from JKKM HMS?')) logout(); }}
+              onClick={() => setShowProfileModal(true)}
               style={{ display:'flex',alignItems:'center',gap:8,background:'none',border:'none',cursor:'pointer',padding:'4px 6px',borderRadius:8,color:'var(--text)' }}
             >
               <div style={{ width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,var(--primary),var(--secondary))',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'bold',fontSize:12,color:'white' }}>
@@ -425,6 +426,59 @@ function MainLayout() {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {showProfileModal && (
+        <div className="modal-overlay" onClick={() => setShowProfileModal(false)}>
+          <div className="modal" style={{ maxWidth: 400, padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 20, color: 'var(--text)' }}>My Profile</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowProfileModal(false)}>✕</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg,var(--primary),var(--secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 28, color: 'white' }}>
+                  {user?.name?.[0]}
+                </div>
+                <div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{user?.name}</div>
+                  <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>{user?.role}</div>
+                </div>
+              </div>
+
+              {user?.role === 'STUDENT' && (
+                <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>REGISTER NO</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.reg_no}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>DEPARTMENT</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.dept_name || 'N/A'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>CLASS/YEAR</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.year} Year</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>ACADEMIC BATCH</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{user?.batch || 'N/A'}</span>
+                  </div>
+                </div>
+              )}
+              
+              <button 
+                onClick={() => { if(window.confirm('Logout from JKKM HMS?')) logout(); }}
+                className="btn btn-outline" 
+                style={{ width: '100%', marginTop: 12, borderColor: 'var(--danger)', color: 'var(--danger)' }}
+              >
+                🚪 Sign Out
+              </button>
             </div>
           </div>
         </div>
